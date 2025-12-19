@@ -14,6 +14,25 @@
 </head>
 
 <body>
+    <button id="theme-toggle" title="테마 전환">
+        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
+    <!-- 플로팅 버튼 제거됨 (헤더 내부로 이동) -->
     <!-- 메뉴 화면 (초기 로드 시 표시) -->
     <div id="menu-view" class="view">
         <div class="menu-container">
@@ -22,42 +41,299 @@
                 <!-- 프로젝트 목록이 여기에 동적으로 로드됩니다 -->
             </ul>
             <button id="create-project-btn" class="primary-btn">새 프로젝트 생성</button>
+            <button id="global-directives-btn" class="secondary-btn" style="margin-top: 12px; margin-left: 0;">전역 지시
+                프롬프트 설정</button>
         </div>
     </div>
 
-    <!-- 에디터 화면 (프로젝트 선택/생성 시 표시) -->
-    <div id="editor-view" class="view hidden">
-        <div class="container">
-            <aside class="sidebar">
-                <button id="back-to-menu-btn" class="back-btn">← 목록으로</button>
-                <h1>챕터</h1>
-                <ul id="chapter-list">
-                    <!-- 챕터 목록이 여기에 동적으로 추가됩니다. -->
-                </ul>
-                <button id="new-chapter-btn" class="primary-btn">새 챕터 추가</button>
-                <div id="char-counter">
-                    <div class="counter-item">
-                        <span>총 글자수</span>
-                        <span id="count-total">0</span>
-                    </div>
-                    <div class="counter-item">
-                        <span>공백 제외</span>
-                        <span id="count-no-space">0</span>
-                    </div>
-                    <div class="counter-item">
-                        <span>순수 문자</span>
-                        <span id="count-pure">0</span>
+    <!-- 프로젝트 상세 뷰 -->
+    <div id="project-detail-view" class="view hidden">
+        <div class="project-detail-container">
+            <header class="project-detail-header">
+                <button id="back-to-menu-from-detail" class="back-link">← 프로젝트 목록으로</button>
+                <div class="project-profile-section">
+                    <div id="detail-project-thumbnail" class="project-large-thumb"></div>
+                    <div class="project-text-info">
+                        <h1 id="detail-project-title">프로젝트 이름</h1>
+                        <p id="detail-project-description">프로젝트 설명이 여기에 들어갑니다.</p>
+                        <div id="detail-project-tags" class="project-tags">
+                            <!-- 태그들이 여기에 동적으로 생성됩니다 -->
+                        </div>
+                        <button id="add-tag-btn" class="add-tag-link">+ 태그 추가</button>
                     </div>
                 </div>
-            </aside>
-            <main class="main-content">
-                <header class="main-header">
-                    <!-- 이 헤더는 이제 레이아웃을 위한 공간이며, 버튼은 외부에 있습니다. -->
-                </header>
-                <div class="editor-container">
-                    <textarea id="editor" spellcheck="false"></textarea>
+            </header>
+
+            <nav class="project-tabs">
+                <button class="tab-btn active" data-tab="tab-settings">설정</button>
+                <button class="tab-btn" data-tab="tab-background">배경 지식</button>
+                <button class="tab-btn" data-tab="tab-characters">등장인물</button>
+                <button class="tab-btn" data-tab="tab-relations">관계도</button>
+                <button class="tab-btn" data-tab="tab-progression">전개</button>
+                <button class="tab-btn" data-tab="tab-foreshadowing">떡밥</button>
+                <button class="tab-btn" data-tab="tab-dictionary">고유어 사전</button>
+            </nav>
+
+            <main class="tab-content-container">
+                <div id="tab-settings" class="tab-pane active">
+                    <div class="settings-form">
+                        <div class="settings-section">
+                            <h3 class="section-title">핵심 경험 (Core Experience)</h3>
+                            <div class="form-group">
+                                <label for="proj-setting-emotion">감정</label>
+                                <input type="text" id="proj-setting-emotion" placeholder="예: 긴장감, 짜릿함, 카타르시스">
+                            </div>
+                            <div class="form-group">
+                                <label for="proj-setting-gratification">만족감</label>
+                                <textarea id="proj-setting-gratification" rows="3"
+                                    placeholder="예: 압도적인 성장관, 복수의 쾌감"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="proj-setting-focus">포커스</label>
+                                <textarea id="proj-setting-focus" rows="3"
+                                    placeholder="예: 주인공의 숨겨진 힘이 드러나는 순간의 주변 반응"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3 class="section-title">문체 및 규칙 (Style & Rules)</h3>
+                            <div class="form-group">
+                                <label for="proj-setting-pov">기본 시점</label>
+                                <textarea id="proj-setting-pov" rows="2"
+                                    placeholder="예: 1인칭 주인공 시점, 3인칭 전지적 작가 시점"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="proj-setting-tone">문체</label>
+                                <textarea id="proj-setting-tone" rows="3"
+                                    placeholder="예: 간결하고 속도감 있는 문체, 화려한 미사여구"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="proj-setting-rules">작성 규칙</label>
+                                <textarea id="proj-setting-rules" rows="5"
+                                    placeholder="예: 사이다 위주의 전개, 전문 용어 사용 자제"></textarea>
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button id="save-proj-settings-btn" class="primary-btn"
+                                style="width: auto; padding: 12px 30px;">설정 저장하기</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="tab-background" class="tab-pane">
+                    <div class="settings-form">
+                        <div class="settings-section">
+                            <h3 class="section-title">세계관 설정</h3>
+                            <div class="form-group">
+                                <label for="proj-bg-world">시간적/공간적 배경</label>
+                                <textarea id="proj-bg-world" rows="4"
+                                    placeholder="예: 마나가 깨어난 21세기 현대 판타지 서울, 공중에 떠 있는 섬들의 대륙"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="proj-bg-events">과거 일어난 중요한 사건들</label>
+                                <textarea id="proj-bg-events" rows="6"
+                                    placeholder="예: 10년 전 발생한 '대균열' 사건, 인류의 절반이 사라진 암흑의 날 등 소설 속 주축이 되는 과거사"></textarea>
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button id="save-proj-bg-btn" class="primary-btn"
+                                style="width: auto; padding: 12px 30px;">배경 지식 저장하기</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="tab-characters" class="tab-pane">
+                    <div class="list-side">
+                        <div class="list-header">
+                            <h3>등장인물 목록</h3>
+                            <button id="add-character-btn" class="primary-btn" style="width: auto; padding: 8px 16px;">+
+                                추가</button>
+                        </div>
+                        <ul id="character-list" class="item-list">
+                            <!-- 캐릭터 아이템들이 여기에 렌더링됨 -->
+                        </ul>
+                    </div>
+                </div>
+                <div id="tab-relations" class="tab-pane">
+                    <div class="placeholder-content">
+                        <h3>관계도</h3>
+                        <p>인물 간의 관계를 시각적으로 정리하는 공간입니다.</p>
+                    </div>
+                </div>
+                <div id="tab-progression" class="tab-pane">
+                    <div class="placeholder-content">
+                        <h3>전개</h3>
+                        <p>소설의 주요 사건 흐름을 추적합니다.</p>
+                    </div>
+                </div>
+                <div id="tab-foreshadowing" class="tab-pane">
+                    <div class="placeholder-content">
+                        <h3>떡밥</h3>
+                        <p>복선과 해결되지 않은 미스터리를 관리하는 공간입니다.</p>
+                    </div>
+                </div>
+                <div id="tab-dictionary" class="tab-pane">
+                    <div class="placeholder-content">
+                        <h3>고유어 사전</h3>
+                        <p>소설만의 특별한 용어나 지명, 아이템 등을 정리합니다.</p>
+                    </div>
                 </div>
             </main>
+        </div>
+
+    </div>
+
+
+
+    <!-- 등장인물 상세 패널 -->
+    <div id="character-detail-panel" class="detail-side hidden">
+        <div class="detail-header" style="justify-content: space-between; gap: 15px;">
+            <h3 style="margin: 0;">인물 프로필 설정</h3>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button id="panel-expand-btn" title="확대/축소">
+                    <svg id="expand-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                    <svg id="shrink-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="4 14 10 14 10 20"></polyline>
+                        <polyline points="20 10 14 10 14 4"></polyline>
+                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                        <line x1="10" y1="14" x2="3" y2="21"></line>
+                    </svg>
+                </button>
+                <button id="panel-close-btn" title="닫기">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="form-container" style="max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 15px;">
+            <!-- 섹션 1: 기본 정보 -->
+            <div class="settings-section">
+                <h3 class="section-title">기본 정보</h3>
+                <div class="form-group">
+                    <label for="char-name">이름 (필수)</label>
+                    <input type="text" id="char-name" placeholder="인물 이름">
+                </div>
+                <div class="grid-form">
+                    <div class="form-group">
+                        <label for="char-gender">성별</label>
+                        <input type="text" id="char-gender" placeholder="예: 남성, 여성, 불명">
+                    </div>
+                    <div class="form-group">
+                        <label for="char-role">역할</label>
+                        <input type="text" id="char-role" placeholder="예: 주인공, 조연, 악역">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="char-race">종족</label>
+                    <input type="text" id="char-race" placeholder="예: 인간, 하이엘프, 드래곤">
+                </div>
+                <div class="form-group">
+                    <label for="char-origin">출신</label>
+                    <textarea id="char-origin" rows="2" placeholder="태생, 소속 길드, 고향 등"></textarea>
+                </div>
+            </div>
+
+            <!-- 섹션 2: 외형 및 특성 -->
+            <div class="settings-section">
+                <h3 class="section-title">외형 및 특성</h3>
+                <div class="form-group">
+                    <label for="char-appearance">외형 설명</label>
+                    <textarea id="char-appearance" rows="6" placeholder="키, 체격, 눈매, 머리색, 옷차림 등"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-features">특징/버릇</label>
+                    <textarea id="char-features" rows="4" placeholder="흉터, 문신, 특이한 신체적 특징"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-abilities">능력/기술</label>
+                    <textarea id="char-abilities" rows="6" placeholder="고유 스킬, 마법, 초능력 등 자원을 사용하는 능력"></textarea>
+                </div>
+            </div>
+
+            <!-- 섹션 3: 성격 및 동기 -->
+            <div class="settings-section">
+                <h3 class="section-title">성격 및 동기</h3>
+                <div class="form-group">
+                    <label for="char-personality-ext">외적 성격</label>
+                    <textarea id="char-personality-ext" rows="4" placeholder="타인에게 보여지는 모습 (예: 쾌활함, 냉철함)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-personality-int">내적 성격</label>
+                    <textarea id="char-personality-int" rows="4" placeholder="속마음, 본성 (예: 사실은 겁이 많음)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-motivation">행동 동기</label>
+                    <textarea id="char-motivation" rows="4" placeholder="무엇을 위해 움직이는가? (예: 복수, 돈, 생존)"></textarea>
+                </div>
+            </div>
+
+            <!-- 섹션 4: 말투 및 행동 패턴 -->
+            <div class="settings-section">
+                <h3 class="section-title">말투 및 행동 패턴</h3>
+                <div class="form-group">
+                    <label for="char-speech-tone">말투 (톤)</label>
+                    <textarea id="char-speech-tone" rows="4" placeholder="예: 정중한 다나까체, 거친 비속어, 나른한 말투"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>대사 예시</label>
+                    <div id="char-speech-examples-list" class="sub-item-list">
+                        <!-- 대사 예시 리스트가 여기에 동적으로 추가됩니다 -->
+                    </div>
+                    <div class="inline-input-group">
+                        <input type="text" id="add-speech-example-input" placeholder="새로운 대사 예시를 입력하세요">
+                        <button id="add-speech-example-btn" class="add-tag-link" style="padding: 0 15px;">추가</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="char-behavior-habits">평소 습관</label>
+                    <textarea id="char-behavior-habits" rows="4" placeholder="생각할 때 입술을 깨묾, 항상 동전을 만짐 등"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-behavior-reactions">위기/특정 상황 행동</label>
+                    <textarea id="char-behavior-reactions" rows="4"
+                        placeholder="공황 상태일 때의 반응, 누군가 죽었을 때의 반응"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-behavior-combat">전투 패턴/기술</label>
+                    <textarea id="char-behavior-combat" rows="4" placeholder="전투 시의 선호 전략이나 필살기 사용 타이밍"></textarea>
+                </div>
+            </div>
+
+            <!-- 섹션 5: 선호 및 과거사 -->
+            <div class="settings-section">
+                <h3 class="section-title">선호 및 과거사</h3>
+                <div class="form-group">
+                    <label for="char-pref-likes">좋아하는 것</label>
+                    <textarea id="char-pref-likes" rows="4" placeholder="음식, 취미, 사람 등"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="char-pref-dislikes">싫어하는 것</label>
+                    <textarea id="char-pref-dislikes" rows="4" placeholder="공포 대상, 혐오하는 행동 등"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>과거 주요 사건 리스트</label>
+                    <div id="char-past-events-list" class="sub-item-list">
+                        <!-- 과거 사건 아이템들이 여기에 렌더링됨 -->
+                    </div>
+                    <button id="add-past-event-btn" class="secondary-btn"
+                        style="width: 100%; margin-top: 10px; border-style: dashed;">+ 과거 사건 추가</button>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 30px; padding-bottom: 50px;">
+                <button id="save-character-btn" class="primary-btn">인물 정보 저장</button>
+                <button id="delete-character-btn" class="secondary-btn" style="color: #ef4444;">삭제</button>
+            </div>
         </div>
     </div>
 
@@ -74,9 +350,17 @@
 
     <!-- 설정 패널 -->
     <div id="settings-panel">
-        <div class="settings-header">
-            <h2>설정</h2>
-            <button id="settings-close-btn" title="설정 닫기">&times;</button>
+        <div class="settings-header"
+            style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--border-color);">
+            <h2 style="margin: 0;">설정</h2>
+            <button id="settings-close-btn-inner" title="닫기"
+                style="background: none; border: 1px solid var(--border-color); width: 36px; height: 36px; border-radius: 8px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: var(--text-secondary);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
         <div class="settings-content">
             <div class="setting-item">
@@ -124,6 +408,10 @@
                     <textarea id="new-project-description" rows="3" placeholder="소설에 대한 간단한 설명을 적어주세요"></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="new-project-tags">태그 (쉼표로 구분)</label>
+                    <input type="text" id="new-project-tags" placeholder="판타지, 회귀, 먼치킨">
+                </div>
+                <div class="form-group">
                     <label for="new-project-thumbnail">썸네일 이미지</label>
                     <input type="file" id="new-project-thumbnail" accept="image/*">
                     <p class="input-help" style="font-size: 0.8rem; color: #888; margin-top: 5px;">선택하지 않으면 검은색 배경이
@@ -140,6 +428,78 @@
     <!-- 오버레이 -->
     <div id="overlay"></div>
 
+    <!-- 전역 지시 프롬프트 설정 모달 -->
+    <div id="global-settings-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <h2>전역 지시 프롬프트 설정</h2>
+            <div class="form-container">
+                <div class="settings-section">
+                    <h3 class="section-title">Prompt Request</h3>
+                    <div class="form-group">
+                        <label for="global-command">명령 (Command)</label>
+                        <textarea id="global-command" rows="2" placeholder="예: 소설 본문을 작성하라"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="global-instruction">지침 (Instruction)</label>
+                        <textarea id="global-instruction" rows="3" placeholder="예: 이전 줄거리를 분석하여 전개하라"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="global-output-requirements">출력 요구사항</label>
+                        <textarea id="global-output-requirements" rows="2"
+                            placeholder="예: JSON 형식을 제외하고 텍스트만 출력"></textarea>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 class="section-title">AI Meta</h3>
+                    <div class="form-group">
+                        <label for="global-role">역할 (Role)</label>
+                        <input type="text" id="global-role" placeholder="예: 웹소설 전문 작가">
+                    </div>
+                    <div class="form-group">
+                        <label for="global-task">임무 (Task)</label>
+                        <input type="text" id="global-task" placeholder="예: 소설 텍스트 생성">
+                    </div>
+                    <div class="form-group">
+                        <label for="global-directives">상세 지시사항</label>
+                        <textarea id="global-directives" rows="4" placeholder="기타 세부 지시사항을 입력하세요"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="global-settings-reset-btn" class="reset-btn" style="margin-right: auto;">기본값으로 초기화</button>
+                <button id="global-settings-save-btn" class="primary-btn">저장하기</button>
+                <button id="global-settings-cancel-btn" class="secondary-btn">취소</button>
+            </div>
+        </div>
+    </div>
+    <!-- 과거 사건 입력 모달 -->
+    <div id="past-event-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>과거 사건 기록</h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="event-summary">과거 사건 요약</label>
+                    <textarea id="event-summary" rows="2" placeholder="사건의 핵심 내용을 한 줄로 요약해주세요."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="event-detail">결정적 사건 상세</label>
+                    <textarea id="event-detail" rows="6" placeholder="사건이 발생한 경위와 구체적인 내용을 상세히 기록해주세요."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="event-impact">현재에 미치는 영향</label>
+                    <textarea id="event-impact" rows="4"
+                        placeholder="이 과거 사건이 현재 캐릭터의 성격, 가치관, 트라우마 등에 어떤 영향을 주었나요?"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-past-event-modal-btn" class="primary-btn">리스트에 추가</button>
+                <button class="secondary-btn cancel-modal">취소</button>
+            </div>
+        </div>
+    </div>
     <script src="script.js" defer></script>
 </body>
 
