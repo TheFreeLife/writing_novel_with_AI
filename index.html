@@ -159,9 +159,16 @@
                     </div>
                 </div>
                 <div id="tab-progression" class="tab-pane">
-                    <div class="placeholder-content">
-                        <h3>전개</h3>
-                        <p>소설의 주요 사건 흐름을 추적합니다.</p>
+                    <div class="list-side">
+                        <div class="list-header">
+                            <h3>전개 목록</h3>
+                            <button id="add-progression-btn" class="primary-btn"
+                                style="width: auto; padding: 8px 16px;">+
+                                추가</button>
+                        </div>
+                        <ul id="progression-list" class="item-list">
+                            <!-- 전개 아이템들이 여기에 렌더링됨 -->
+                        </ul>
                     </div>
                 </div>
                 <div id="tab-foreshadowing" class="tab-pane">
@@ -171,9 +178,15 @@
                     </div>
                 </div>
                 <div id="tab-dictionary" class="tab-pane">
-                    <div class="placeholder-content">
-                        <h3>고유어 사전</h3>
-                        <p>소설만의 특별한 용어나 지명, 아이템 등을 정리합니다.</p>
+                    <div class="list-side">
+                        <div class="list-header">
+                            <h3>고유어 사전 목록</h3>
+                            <button id="add-dict-btn" class="primary-btn" style="width: auto; padding: 8px 16px;">+
+                                추가</button>
+                        </div>
+                        <ul id="dict-list" class="item-list">
+                            <!-- 고유어 아이템들이 여기에 렌더링됨 -->
+                        </ul>
                     </div>
                 </div>
             </main>
@@ -251,7 +264,7 @@
                     <textarea id="char-appearance" rows="6" placeholder="키, 체격, 눈매, 머리색, 옷차림 등"></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="char-features">특징/버릇</label>
+                    <label for="char-features">특징</label>
                     <textarea id="char-features" rows="4" placeholder="흉터, 문신, 특이한 신체적 특징"></textarea>
                 </div>
                 <div class="form-group">
@@ -313,12 +326,24 @@
             <div class="settings-section">
                 <h3 class="section-title">선호 및 과거사</h3>
                 <div class="form-group">
-                    <label for="char-pref-likes">좋아하는 것</label>
-                    <textarea id="char-pref-likes" rows="4" placeholder="음식, 취미, 사람 등"></textarea>
+                    <label>좋아하는 것</label>
+                    <div id="char-likes-list" class="sub-item-list">
+                        <!-- 좋아하는 것 리스트 -->
+                    </div>
+                    <div class="inline-input-group">
+                        <input type="text" id="add-like-input" placeholder="좋아하는 것을 입력하세요">
+                        <button id="add-like-btn" class="add-tag-link" style="padding: 0 15px;">추가</button>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="char-pref-dislikes">싫어하는 것</label>
-                    <textarea id="char-pref-dislikes" rows="4" placeholder="공포 대상, 혐오하는 행동 등"></textarea>
+                    <label>싫어하는 것</label>
+                    <div id="char-dislikes-list" class="sub-item-list">
+                        <!-- 싫어하는 것 리스트 -->
+                    </div>
+                    <div class="inline-input-group">
+                        <input type="text" id="add-dislike-input" placeholder="싫어하는 것을 입력하세요">
+                        <button id="add-dislike-btn" class="add-tag-link" style="padding: 0 15px;">추가</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>과거 주요 사건 리스트</label>
@@ -333,6 +358,126 @@
             <div class="modal-footer" style="margin-top: 30px; padding-bottom: 50px;">
                 <button id="save-character-btn" class="primary-btn">인물 정보 저장</button>
                 <button id="delete-character-btn" class="secondary-btn" style="color: #ef4444;">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 전개 상세 패널 -->
+    <div id="progression-detail-panel" class="detail-side hidden">
+        <div class="detail-header" style="justify-content: space-between; gap: 15px;">
+            <h3 style="margin: 0;">전개 설정</h3>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button id="prog-panel-expand-btn" title="확대/축소">
+                    <svg id="prog-expand-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                    <svg id="prog-shrink-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="4 14 10 14 10 20"></polyline>
+                        <polyline points="20 10 14 10 14 4"></polyline>
+                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                        <line x1="10" y1="14" x2="3" y2="21"></line>
+                    </svg>
+                </button>
+                <button id="prog-panel-close-btn" title="닫기">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="form-container" style="max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 15px;">
+            <div class="settings-section">
+                <h3 class="section-title">회차 정보</h3>
+                <div class="form-group">
+                    <label>화수</label>
+                    <div id="prog-episode-display"
+                        style="padding: 10px; background: var(--bg-secondary); border-radius: 4px; font-weight: bold; color: var(--primary-color);">
+                        1화 (자동 배정)</div>
+                </div>
+                <div class="form-group">
+                    <label for="prog-summary">내용 요약</label>
+                    <textarea id="prog-summary" rows="6" placeholder="해당 화의 핵심 내용을 요약해주세요."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="prog-points">중요 포인트</label>
+                    <textarea id="prog-points" rows="6"
+                        placeholder="해당 화에서 놓치지 말아야 할 복선, 갈등, 강화 요소 등을 적어주세요."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 30px; padding-bottom: 50px;">
+                <button id="save-progression-btn" class="primary-btn">전개 정보 저장</button>
+                <button id="delete-progression-btn" class="secondary-btn" style="color: #ef4444;">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 고유어 상세 패널 -->
+    <div id="dict-detail-panel" class="detail-side hidden">
+        <div class="detail-header" style="justify-content: space-between; gap: 15px;">
+            <h3 style="margin: 0;">고유어 설정</h3>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button id="dict-panel-expand-btn" title="확대/축소">
+                    <svg id="dict-expand-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                    <svg id="dict-shrink-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="4 14 10 14 10 20"></polyline>
+                        <polyline points="20 10 14 10 14 4"></polyline>
+                        <line x1="14" y1="10" x2="21" y2="3"></line>
+                        <line x1="10" y1="14" x2="3" y2="21"></line>
+                    </svg>
+                </button>
+                <button id="dict-panel-close-btn" title="닫기">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="form-container" style="max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 15px;">
+            <div class="settings-section">
+                <h3 class="section-title">기본 정보</h3>
+                <div class="form-group">
+                    <label for="dict-name">이름 (필수)</label>
+                    <input type="text" id="dict-name" placeholder="고유어 이름">
+                </div>
+                <div class="form-group">
+                    <label for="dict-category">카테고리</label>
+                    <select id="dict-category">
+                        <option value="장소">장소</option>
+                        <option value="아이템">아이템</option>
+                        <option value="몬스터">몬스터</option>
+                        <option value="길드">길드</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="dict-description">상세 설명</label>
+                    <textarea id="dict-description" rows="10" placeholder="해당 고유어에 대한 상세 내용을 기록해주세요."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 30px; padding-bottom: 50px;">
+                <button id="save-dict-btn" class="primary-btn">고유어 저장</button>
+                <button id="delete-dict-btn" class="secondary-btn" style="color: #ef4444;">삭제</button>
             </div>
         </div>
     </div>
@@ -500,7 +645,7 @@
             </div>
         </div>
     </div>
-    <script src="script.js" defer></script>
+    <script src="js/app.js" type="module"></script>
 </body>
 
 </html>
