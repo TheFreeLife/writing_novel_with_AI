@@ -129,9 +129,12 @@
                                     placeholder="예: 마나가 깨어난 21세기 현대 판타지 서울, 공중에 떠 있는 섬들의 대륙"></textarea>
                             </div>
                             <div class="form-group">
-                                <label for="proj-bg-events">과거 일어난 중요한 사건들</label>
-                                <textarea id="proj-bg-events" rows="6"
-                                    placeholder="예: 10년 전 발생한 '대균열' 사건, 인류의 절반이 사라진 암흑의 날 등 소설 속 주축이 되는 과거사"></textarea>
+                                <label>과거 일어난 중요한 사건들</label>
+                                <div id="proj-bg-events-list" class="sub-item-list">
+                                    <!-- 배경 사건 아이템들이 여기에 렌더링됨 -->
+                                </div>
+                                <button id="add-proj-bg-event-btn" class="secondary-btn"
+                                    style="width: 100%; margin-top: 10px; border-style: dashed;">+ 과거 사건 추가</button>
                             </div>
                         </div>
                         <div style="text-align: right; margin-top: 20px;">
@@ -644,6 +647,38 @@
             </div>
         </div>
     </div>
+
+    <!-- 배경 사건 입력 모달 -->
+    <div id="proj-bg-event-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>배경 사건 기록</h2>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="proj-bg-event-time">시간대</label>
+                    <input type="text" id="proj-bg-event-time" placeholder="예: 10년 전, 고대 왕국 시절">
+                </div>
+                <div class="form-group">
+                    <label for="proj-bg-event-name">사건 이름 (필수)</label>
+                    <input type="text" id="proj-bg-event-name" placeholder="예: 대균열, 암흑의 날">
+                </div>
+                <div class="form-group">
+                    <label for="proj-bg-event-detail">사건 상세 내용</label>
+                    <textarea id="proj-bg-event-detail" rows="5" placeholder="사건이 발생한 경위와 구체적인 내용을 상세히 기록해주세요."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="proj-bg-event-impact">현재에 미치는 영향</label>
+                    <textarea id="proj-bg-event-impact" rows="3" placeholder="이 사건이 현재 세계관이나 스토리에 어떤 영향을 주었나요?"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-proj-bg-event-modal-btn" class="primary-btn">리스트에 추가</button>
+                <button class="secondary-btn cancel-modal">취소</button>
+            </div>
+        </div>
+    </div>
+
     
     <!-- 고유어 카테고리 관리 모달 -->
     <div id="dict-category-modal" class="modal">

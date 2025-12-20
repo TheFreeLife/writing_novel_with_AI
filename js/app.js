@@ -22,6 +22,7 @@ class NovelApp {
         this.editingProjectId = null;
         this.currentEditingEventIdx = null;
         this.currentEditingCategoryIndex = null;
+        this.currentEditingBgEventIndex = null;
 
         this.initDOM();
         this.bindEvents();
@@ -63,8 +64,18 @@ class NovelApp {
             saveProjSettingsBtn: document.getElementById('save-proj-settings-btn'),
 
             projBgWorld: document.getElementById('proj-bg-world'),
-            projBgEvents: document.getElementById('proj-bg-events'),
             saveProjBgBtn: document.getElementById('save-proj-bg-btn'),
+
+            projBgEventsList: document.getElementById('proj-bg-events-list'),
+            addProjBgEventBtn: document.getElementById('add-proj-bg-event-btn'),
+            projBgEventModal: document.getElementById('proj-bg-event-modal'),
+            projBgEventInputs: {
+                time: document.getElementById('proj-bg-event-time'),
+                name: document.getElementById('proj-bg-event-name'),
+                detail: document.getElementById('proj-bg-event-detail'),
+                impact: document.getElementById('proj-bg-event-impact'),
+            },
+            saveProjBgEventModalBtn: document.getElementById('save-proj-bg-event-modal-btn'),
 
             charListUl: document.getElementById('character-list'),
             addCharBtn: document.getElementById('add-character-btn'),
@@ -197,6 +208,11 @@ class NovelApp {
         this.dom.saveProjSettingsBtn.addEventListener('click', () => this.saveProjectSettings());
         this.dom.saveProjBgBtn.addEventListener('click', () => this.saveBackgroundKnowledge());
 
+        this.dom.addProjBgEventBtn.addEventListener('click', () => this.openBackgroundEventModal());
+        this.dom.saveProjBgEventModalBtn.addEventListener('click', () => this.saveBackgroundEvent());
+        this.dom.projBgEventModal.querySelector('.cancel-modal').addEventListener('click', () => this.closeBackgroundEventModal());
+
+
         this.dom.addCharBtn.addEventListener('click', () => this.openCharacterPanel());
         this.dom.saveCharBtn.addEventListener('click', () => this.saveCharacter());
         this.dom.deleteCharBtn.addEventListener('click', () => this.deleteCharacter());
@@ -290,6 +306,7 @@ class NovelApp {
         this.closeDictionaryPanel();
         this.closePastEventModal();
         this.closeCategoryModal();
+        this.closeBackgroundEventModal();
     }
 
     async renderProjectList() {
@@ -387,7 +404,19 @@ class NovelApp {
         });
         const bg = p.backgroundSettings || {};
         this.dom.projBgWorld.value = bg.world || '';
-        this.dom.projBgEvents.value = bg.events || '';
+        
+        // Data migration for background events
+        if (bg.events && typeof bg.events === 'string') {
+            p.backgroundSettings.events = [{
+                name: '기존 사건 기록',
+                detail: bg.events,
+                time: '미지정',
+                impact: ''
+            }];
+            await StorageManager.set(StorageManager.STORE_PROJECTS, p);
+        }
+        this.renderBackgroundEventsList();
+
         this.renderCharacterList(p.characters || []); this.closeCharacterPanel();
         this.renderProgressionList(p.progression || []); this.closeProgressionPanel();
         this.renderDictionaryList(p.dictionary || []); this.closeDictionaryPanel();
@@ -421,9 +450,106 @@ class NovelApp {
 
     async saveBackgroundKnowledge() {
         const p = this.projects.find(x => x.id === this.currentProjectId);
-        p.backgroundSettings = { world: this.dom.projBgWorld.value.trim(), events: this.dom.projBgEvents.value.trim() };
-        await this.updateProjectInDB(p); alert("저장됨");
+        if (!p) return;
+        if (!p.backgroundSettings) p.backgroundSettings = {};
+
+        p.backgroundSettings.world = this.dom.projBgWorld.value.trim();
+        // Events are now saved automatically
+        
+        await this.updateProjectInDB(p);
+        alert("배경 지식이 저장되었습니다.");
     }
+
+    renderBackgroundEventsList() {
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (!p) return;
+        const events = p.backgroundSettings?.events || [];
+
+        this.dom.projBgEventsList.innerHTML = events.length ? '' : '<div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;padding:10px;">등록된 과거 사건이 없습니다.</div>';
+
+        events.forEach((ev, i) => {
+            const li = document.createElement('li');
+            li.className = 'item-card';
+            li.innerHTML = `
+                <div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div>
+                <div class="item-content">
+                    <div class="item-name">${ev.name} <span style="font-weight:normal;color:var(--text-secondary);font-size:0.9em;">(${ev.time || '시점 미지정'})</span></div>
+                    <div class="item-meta">${(ev.detail || '').substring(0, 50)}${ev.detail.length > 50 ? '...' : ''}</div>
+                </div>
+                <button class="sub-item-delete">&times;</button>
+            `;
+            
+            li.addEventListener('click', (e) => {
+                if (e.target.classList.contains('sub-item-delete') || e.target.closest('.sub-item-delete')) {
+                    // handled by its own listener
+                } else if (e.target.classList.contains('drag-handle') || e.target.closest('.drag-handle')) {
+                    // handled by ListModule
+                } else {
+                    this.openBackgroundEventModal(i);
+                }
+            });
+
+            li.querySelector('.sub-item-delete').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm(`'${ev.name}' 사건을 삭제하시겠습니까?`)) {
+                    p.backgroundSettings.events.splice(i, 1);
+                    await this.updateProjectInDB(p);
+                    this.renderBackgroundEventsList();
+                }
+            });
+            
+            ListModule.setupDragAndDrop(li, i, p.backgroundSettings.events, async (newList) => {
+                p.backgroundSettings.events = newList;
+                await StorageManager.set(StorageManager.STORE_PROJECTS, p); // Silently save order
+                this.renderBackgroundEventsList(); // Re-render to fix indices and listeners
+            });
+
+            this.dom.projBgEventsList.appendChild(li);
+        });
+    }
+
+    openBackgroundEventModal(index = null) {
+        this.currentEditingBgEventIndex = index;
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        const events = p.backgroundSettings?.events || [];
+        const ev = index !== null ? events[index] : { time: '', name: '', detail: '', impact: '' };
+        
+        Object.keys(this.dom.projBgEventInputs).forEach(key => {
+            this.dom.projBgEventInputs[key].value = ev[key] || '';
+        });
+
+        this.dom.saveProjBgEventModalBtn.textContent = index !== null ? '수정 완료' : '리스트에 추가';
+        UIHelper.openModal(this.dom.projBgEventModal, this.dom.overlay);
+    }
+
+    closeBackgroundEventModal() {
+        UIHelper.closeModal(this.dom.projBgEventModal, this.dom.overlay);
+    }
+
+    async saveBackgroundEvent() {
+        const name = this.dom.projBgEventInputs.name.value.trim();
+        if (!name) return alert("사건 이름은 필수입니다.");
+
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if(!p.backgroundSettings) p.backgroundSettings = {};
+        if(!p.backgroundSettings.events) p.backgroundSettings.events = [];
+
+        const eventData = {};
+        Object.keys(this.dom.projBgEventInputs).forEach(key => {
+            eventData[key] = this.dom.projBgEventInputs[key].value.trim();
+        });
+
+        if (this.currentEditingBgEventIndex !== null) {
+            p.backgroundSettings.events[this.currentEditingBgEventIndex] = eventData;
+        } else {
+            p.backgroundSettings.events.push(eventData);
+        }
+
+        await this.updateProjectInDB(p);
+        this.renderBackgroundEventsList();
+        this.closeBackgroundEventModal();
+    }
+
 
     async updateProjectInDB(p) { await StorageManager.set(StorageManager.STORE_PROJECTS, p); await this.renderProjectList(); }
 
@@ -502,7 +628,13 @@ class NovelApp {
         this.tempPastEvents.forEach((ev, i) => {
             const d = document.createElement('div'); d.className = 'sub-item-card'; d.innerHTML = `<div class="sub-item-title">${ev.summary}</div><div class="sub-item-desc">${ev.detail}</div><button class="sub-item-delete">&times;</button>`;
             d.onclick = (e) => e.target.classList.contains('sub-item-delete') ? null : this.openPastEventModal(i);
-            d.querySelector('.sub-item-delete').onclick = () => { this.tempPastEvents.splice(i, 1); this.renderPastEventsList(); };
+            d.querySelector('.sub-item-delete').onclick = () => {
+                const eventSummary = this.tempPastEvents[i].summary || '이름 없는 사건';
+                if (confirm(`'${eventSummary}' 사건을 삭제하시겠습니까?`)) {
+                    this.tempPastEvents.splice(i, 1);
+                    this.renderPastEventsList();
+                }
+            };
             this.dom.pastEventsList.appendChild(d);
         });
     }
