@@ -21,6 +21,7 @@ class NovelApp {
         this.currentDictionaryId = null;
         this.editingProjectId = null;
         this.currentEditingEventIdx = null;
+        this.currentEditingCategoryIndex = null;
 
         this.initDOM();
         this.bindEvents();
@@ -138,6 +139,14 @@ class NovelApp {
                 description: document.getElementById('dict-description'),
             },
 
+            editDictCategoryBtn: document.getElementById('edit-dict-category-btn'),
+            dictCategoryModal: document.getElementById('dict-category-modal'),
+            closeDictCategoryModalBtn: document.getElementById('close-dict-category-modal-btn'),
+            dictCategoryList: document.getElementById('dict-category-list'),
+            dictCategoryInput: document.getElementById('dict-category-input'),
+            saveDictCategoryBtn: document.getElementById('save-dict-category-btn'),
+
+
             globalModal: document.getElementById('global-settings-modal'),
             globalInputs: {
                 command: document.getElementById('global-command'),
@@ -215,6 +224,13 @@ class NovelApp {
         this.dom.deleteDictBtn.addEventListener('click', () => this.deleteDictionary());
         this.dom.dictExpandBtn.addEventListener('click', () => this.togglePanelExpand('dictDetailPanel', 'dictExpandIcon', 'dictShrinkIcon'));
 
+        this.dom.editDictCategoryBtn.addEventListener('click', () => this.openCategoryModal());
+        this.dom.closeDictCategoryModalBtn.addEventListener('click', () => this.closeCategoryModal());
+
+        this.dom.saveDictCategoryBtn.addEventListener('click', () => this.handleCategorySave());
+
+
+
         this.dom.openGlobalBtn.addEventListener('click', () => this.openGlobalSettings());
         this.dom.saveGlobalBtn.addEventListener('click', () => this.saveGlobalSettings());
         this.dom.cancelGlobalBtn.addEventListener('click', () => this.closeGlobalSettings());
@@ -273,6 +289,7 @@ class NovelApp {
         this.closeProgressionPanel();
         this.closeDictionaryPanel();
         this.closePastEventModal();
+        this.closeCategoryModal();
     }
 
     async renderProjectList() {
@@ -334,7 +351,15 @@ class NovelApp {
             await StorageManager.set(StorageManager.STORE_PROJECTS, p);
         } else {
             const id = Date.now().toString();
-            const np = { id, name: title, description: this.dom.newProjectDesc.value.trim(), tags, thumbnail: thumb, creationDate: new Date().toISOString() };
+            const np = {
+                id,
+                name: title,
+                description: this.dom.newProjectDesc.value.trim(),
+                tags,
+                thumbnail: thumb,
+                creationDate: new Date().toISOString(),
+                dictionaryCategories: ['장소', '아이템', '몬스터', '길드']
+            };
             await StorageManager.set(StorageManager.STORE_PROJECTS, np);
             await StorageManager.set(StorageManager.STORE_SETTINGS, { bgColor: '#ffffff', fontColor: '#212529', fontSize: '16', fontFamily: "'Noto Serif CJK KR', serif" }, id);
         }
@@ -345,6 +370,13 @@ class NovelApp {
         this.currentProjectId = id;
         const p = this.projects.find(x => x.id === id);
         if (!p) return;
+
+        // Data migration for dictionary categories
+        if (!p.dictionaryCategories) {
+            p.dictionaryCategories = ['장소', '아이템', '몬스터', '길드'];
+            await StorageManager.set(StorageManager.STORE_PROJECTS, p);
+        }
+
         this.dom.detailTitle.textContent = p.name;
         this.dom.detailDescription.textContent = p.description || '설명 없음';
         this.renderDetailTags(p);
@@ -581,14 +613,61 @@ class NovelApp {
         });
     }
 
-    openDictionaryPanel(it = null) {
-        this.currentDictionaryId = it?.id || null;
-        Object.keys(this.dom.dictInputs).forEach(k => this.dom.dictInputs[k].value = it?.[k] || (k === 'category' ? '장소' : ''));
-        this.dom.dictDetailPanel.classList.remove('hidden'); this.dom.dictDetailPanel.querySelector('.form-container').scrollTop = 0;
-        this.dom.themeToggle.classList.add('hidden'); this.dom.dictCloseBtn?.classList.remove('hidden'); this.dom.overlay.classList.add('visible');
-        this.dom.deleteDictBtn.style.display = it ? 'block' : 'none';
-        const p = this.projects.find(x => x.id === this.currentProjectId); if (p) this.renderDictionaryList(p.dictionary || []);
-    }
+        openDictionaryPanel(it = null) {
+
+            this.currentDictionaryId = it?.id || null;
+
+    
+
+            const p = this.projects.find(x => x.id === this.currentProjectId);
+
+            const categorySelect = this.dom.dictInputs.category;
+
+            const currentCategory = it?.category || (p.dictionaryCategories.length > 0 ? p.dictionaryCategories[0] : '');
+
+    
+
+            categorySelect.innerHTML = ''; // Clear existing options
+
+            p.dictionaryCategories.forEach(cat => {
+
+                const option = document.createElement('option');
+
+                option.value = cat;
+
+                option.textContent = cat;
+
+                categorySelect.appendChild(option);
+
+            });
+
+            categorySelect.value = currentCategory;
+
+    
+
+            // Set other inputs
+
+            this.dom.dictInputs.name.value = it?.name || '';
+
+            this.dom.dictInputs.description.value = it?.description || '';
+
+    
+
+            this.dom.dictDetailPanel.classList.remove('hidden');
+
+            this.dom.dictDetailPanel.querySelector('.form-container').scrollTop = 0;
+
+            this.dom.themeToggle.classList.add('hidden');
+
+            this.dom.dictCloseBtn?.classList.remove('hidden');
+
+            this.dom.overlay.classList.add('visible');
+
+            this.dom.deleteDictBtn.style.display = it ? 'block' : 'none';
+
+            if (p) this.renderDictionaryList(p.dictionary || []);
+
+        }
 
     closeDictionaryPanel() {
         this.dom.dictDetailPanel.classList.add('hidden'); this.dom.dictDetailPanel.classList.remove('expanded');
@@ -613,6 +692,118 @@ class NovelApp {
     }
 
     async deleteDictionary() { if (confirm("삭제?")) { const p = this.projects.find(x => x.id === this.currentProjectId); p.dictionary = p.dictionary.filter(x => x.id !== this.currentDictionaryId); await this.updateProjectInDB(p); this.closeDictionaryPanel(); } }
+
+    openCategoryModal() {
+        this.currentEditingCategoryIndex = null;
+        this.dom.dictCategoryInput.value = '';
+        this.dom.saveDictCategoryBtn.textContent = '추가';
+        this.renderCategoryList();
+        UIHelper.openModal(this.dom.dictCategoryModal, this.dom.overlay);
+    }
+
+    closeCategoryModal() {
+        UIHelper.closeModal(this.dom.dictCategoryModal, this.dom.overlay);
+    }
+
+    renderCategoryList() {
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (!p) return;
+        this.dom.dictCategoryList.innerHTML = '';
+        p.dictionaryCategories.forEach((cat, index) => {
+            const li = document.createElement('li');
+            li.className = 'category-list-item';
+            if (this.currentEditingCategoryIndex === index) {
+                li.classList.add('selected');
+            }
+            li.innerHTML = `
+                <span>${cat}</span>
+                <div class="category-item-buttons">
+                    <button class="delete-cat-btn">삭제</button>
+                </div>
+            `;
+            li.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-cat-btn')) {
+                    this.handleCategoryDelete(index);
+                } else {
+                    this.handleCategorySelect(index);
+                }
+            });
+            this.dom.dictCategoryList.appendChild(li);
+        });
+    }
+
+    handleCategorySelect(index) {
+        if (this.currentEditingCategoryIndex === index) {
+            // Item is already selected, so deselect it
+            this.currentEditingCategoryIndex = null;
+            this.dom.dictCategoryInput.value = '';
+            this.dom.saveDictCategoryBtn.textContent = '추가';
+        } else {
+            // A new item is selected for editing
+            const p = this.projects.find(x => x.id === this.currentProjectId);
+            this.currentEditingCategoryIndex = index;
+            this.dom.dictCategoryInput.value = p.dictionaryCategories[index];
+            this.dom.saveDictCategoryBtn.textContent = '수정';
+        }
+        this.renderCategoryList(); // Re-render to show selection change
+    }
+
+    async handleCategorySave() {
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        const newCategory = this.dom.dictCategoryInput.value.trim();
+        if (!newCategory) return;
+
+        const isDuplicate = p.dictionaryCategories.some((cat, index) => cat.toLowerCase() === newCategory.toLowerCase() && index !== this.currentEditingCategoryIndex);
+        if (isDuplicate) {
+            return alert('이미 존재하는 카테고리입니다.');
+        }
+
+        if (this.currentEditingCategoryIndex !== null) {
+            // Update
+            const oldCategory = p.dictionaryCategories[this.currentEditingCategoryIndex];
+            p.dictionaryCategories[this.currentEditingCategoryIndex] = newCategory;
+            // Update all dictionary items that use the old category
+            (p.dictionary || []).forEach(item => {
+                if (item.category === oldCategory) {
+                    item.category = newCategory;
+                }
+            });
+        } else {
+            // Add new
+            p.dictionaryCategories.push(newCategory);
+        }
+
+        await this.updateProjectInDB(p);
+        this.currentEditingCategoryIndex = null;
+        this.dom.dictCategoryInput.value = '';
+        this.dom.saveDictCategoryBtn.textContent = '추가';
+        this.renderCategoryList();
+        this.renderDictionaryList(p.dictionary || []); // Also re-render the dictionary list to reflect changes
+    }
+
+    async handleCategoryDelete(index) {
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        const categoryToDelete = p.dictionaryCategories[index];
+
+        const isInUse = (p.dictionary || []).some(item => item.category === categoryToDelete);
+        if (isInUse) {
+            return alert('해당 카테고리를 사용하는 고유어가 있어 삭제할 수 없습니다.');
+        }
+        
+        if (!confirm(`'${categoryToDelete}' 카테고리를 삭제하시겠습니까?`)) return;
+
+        p.dictionaryCategories.splice(index, 1);
+        await this.updateProjectInDB(p);
+        
+        if (this.currentEditingCategoryIndex === index) {
+            this.currentEditingCategoryIndex = null;
+            this.dom.dictCategoryInput.value = '';
+            this.dom.saveDictCategoryBtn.textContent = '추가';
+        }
+
+        this.renderCategoryList();
+    }
+
 
     togglePanelExpand(pk, ek, sk) { const p = this.dom[pk]; const isE = p.classList.toggle('expanded'); this.dom[ek].classList.toggle('hidden', isE); this.dom[sk].classList.toggle('hidden', !isE); }
 

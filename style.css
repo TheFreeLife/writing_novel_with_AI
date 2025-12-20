@@ -65,7 +65,8 @@ body {
 }
 
 #panel-close-btn,
-#prog-panel-close-btn {
+#prog-panel-close-btn,
+#dict-panel-close-btn {
     background: none;
     border: 1px solid var(--border-color);
     width: 36px;
@@ -77,10 +78,6 @@ body {
     cursor: pointer;
     color: var(--text-secondary);
     transition: all 0.2s;
-}
-
-#panel-close-btn,
-#prog-panel-close-btn {
     z-index: 2100;
     /* 패널(1500) 및 테마버튼(2000)보다 위 */
 }
@@ -91,7 +88,8 @@ body {
 }
 
 #panel-close-btn:hover,
-#prog-panel-close-btn:hover {
+#prog-panel-close-btn:hover,
+#dict-panel-close-btn:hover {
     background-color: var(--secondary-color);
     color: #ef4444;
     border-color: #ef4444;
@@ -901,7 +899,8 @@ body {
 }
 
 .form-group input[type="text"],
-.form-group textarea {
+.form-group textarea,
+.form-group select {
     width: 100%;
     padding: 14px;
     background-color: var(--bg-color);
@@ -913,6 +912,16 @@ body {
     color: var(--text-color);
     box-sizing: border-box;
     transition: all 0.2s;
+}
+
+.form-group select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23656d76' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px; /* 화살표 공간 확보 */
 }
 
 .reset-btn {
@@ -933,7 +942,8 @@ body {
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
     outline: none;
     border-color: var(--primary-color);
     background-color: var(--card-bg);
@@ -1153,7 +1163,8 @@ body {
 }
 
 #panel-expand-btn,
-#prog-panel-expand-btn {
+#prog-panel-expand-btn,
+#dict-panel-expand-btn {
     background: none;
     border: 1px solid var(--border-color);
     width: 36px;
@@ -1168,7 +1179,8 @@ body {
 }
 
 #panel-expand-btn:hover,
-#prog-panel-expand-btn:hover {
+#prog-panel-expand-btn:hover,
+#dict-panel-expand-btn:hover {
     background-color: var(--secondary-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
@@ -1405,4 +1417,54 @@ body {
 .inline-input-group input {
     flex: 1;
     margin-bottom: 0 !important;
+}
+
+/* --- Category Management Modal Styles --- */
+.category-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.category-list-item.selected {
+    background-color: var(--secondary-color);
+    border-color: var(--primary-color);
+}
+
+.category-list-item span {
+    font-weight: 600;
+}
+
+.category-item-buttons button {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 5px;
+}
+
+.category-item-buttons .edit-cat-btn:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.category-item-buttons .delete-cat-btn {
+    color: #ef4444;
+}
+
+.category-item-buttons .delete-cat-btn:hover {
+    background-color: #ef4444;
+    border-color: #ef4444;
+    color: white;
 }
