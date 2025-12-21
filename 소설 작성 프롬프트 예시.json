@@ -15,9 +15,9 @@
     "narrative_focus": "핵심 경험 (Core Experience)/포커스"
   },
   "world_settings": {
-    "title": "F급인 줄 알았는데 SSS급",
-    "genre": "현대 판타지, 헌터물, 먼치킨",
-    "background_lore": "10년 전 서울에 게이트가 열림. 사람들은 각성자로 눈을 떴으나, 주인공은 마력이 '0'으로 측정되어 무시당함."
+    "title": "프로젝트 제목",
+    "genre": "프로젝트 설명",
+    "background_lore": "배경 지식/ 시간적/공간적 배경"
   },
   "characters": [
     {
@@ -95,19 +95,19 @@
   "foreshadowing_registry": {
     "active_hooks": [
       {
-        "id": "system_error",
-        "hidden_truth": "주인공의 상태창이 깨진 이유는 그가 '시스템'보다 상위 존재이기 때문.",
-        "observable_clue": "주인공이 스킬을 쓸 때 상태창에 'ERROR: 측정 불가'라는 붉은 글씨가 깜빡임.",
-        "reveal_stage": "초기 (독자들이 주인공의 정체를 궁금해하도록 유도)"
+        "id": "떡밥 정보/명칭 (필수)",
+        "hidden_truth": "떡밥 정보/숨겨진 사실",
+        "observable_clue": "떡밥 정보/단서",
+        "reveal_stage": "떡밥 정보/공개 타이밍"
       }
     ]
   },
   "major_events_log": [
     {
-      "timing": "과거 일어난 중요한 사건들/시간대",
-      "event_name": "과거 일어난 중요한 사건들/사건 이름 (필수)",
-      "description": "서울과거 일어난 중요한 사건들/사건 상세 내용",
-      "narrative_impact": "과거 일어난 중요한 사건들/현재에 미치는 영향"
+      "timing": "배경 지식/과거 일어난 중요한 사건들/시간대",
+      "event_name": "배경 지식/과거 일어난 중요한 사건들/사건 이름 (필수)",
+      "description": "배경 지식/서울과거 일어난 중요한 사건들/사건 상세 내용",
+      "narrative_impact": "배경 지식/과거 일어난 중요한 사건들/현재에 미치는 영향"
     }
   ],
   "story_progression_log": {

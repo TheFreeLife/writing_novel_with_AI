@@ -18,6 +18,7 @@ class NovelApp {
         this.tempDislikes = [];
         this.currentCharacterId = null;
         this.currentProgressionId = null;
+        this.currentForeshadowingId = null;
         this.currentDictionaryId = null;
         this.editingProjectId = null;
         this.currentEditingEventIdx = null;
@@ -135,6 +136,22 @@ class NovelApp {
             progShrinkIcon: document.getElementById('prog-shrink-icon'),
             progCloseBtn: document.getElementById('prog-panel-close-btn'),
 
+            foreshadowingListUl: document.getElementById('foreshadowing-list'),
+            addForeshadowingBtn: document.getElementById('add-foreshadowing-btn'),
+            foreshadowingDetailPanel: document.getElementById('foreshadowing-detail-panel'),
+            saveForeshadowingBtn: document.getElementById('save-foreshadowing-btn'),
+            deleteForeshadowingBtn: document.getElementById('delete-foreshadowing-btn'),
+            foreshadowingInputs: {
+                name: document.getElementById('foreshadowing-name'),
+                hiddenFact: document.getElementById('foreshadowing-hidden-fact'),
+                clue: document.getElementById('foreshadowing-clue'),
+                revealTiming: document.getElementById('foreshadowing-reveal-timing'),
+            },
+            foreshadowingExpandBtn: document.getElementById('foreshadowing-panel-expand-btn'),
+            foreshadowingExpandIcon: document.getElementById('foreshadowing-expand-icon'),
+            foreshadowingShrinkIcon: document.getElementById('foreshadowing-shrink-icon'),
+            foreshadowingCloseBtn: document.getElementById('foreshadowing-panel-close-btn'),
+
             dictListUl: document.getElementById('dict-list'),
             addDictBtn: document.getElementById('add-dict-btn'),
             dictDetailPanel: document.getElementById('dict-detail-panel'),
@@ -196,7 +213,7 @@ class NovelApp {
         this.dom.overlay.addEventListener('click', () => this.closeAllOverlappingUIs());
 
         const closeAll = () => this.closeAllOverlappingUIs();
-        [this.dom.panelCloseBtn, this.dom.progCloseBtn, this.dom.dictCloseBtn, this.dom.settingsCloseBtnInner].forEach(btn => btn?.addEventListener('click', closeAll));
+        [this.dom.panelCloseBtn, this.dom.progCloseBtn, this.dom.foreshadowingCloseBtn, this.dom.dictCloseBtn, this.dom.settingsCloseBtnInner].forEach(btn => btn?.addEventListener('click', closeAll));
 
         document.addEventListener('click', () => {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('visible'));
@@ -234,6 +251,11 @@ class NovelApp {
         this.dom.saveProgBtn.addEventListener('click', () => this.saveProgression());
         this.dom.deleteProgBtn.addEventListener('click', () => this.deleteProgression());
         this.dom.progExpandBtn.addEventListener('click', () => this.togglePanelExpand('progDetailPanel', 'progExpandIcon', 'progShrinkIcon'));
+
+        this.dom.addForeshadowingBtn.addEventListener('click', () => this.openForeshadowingPanel());
+        this.dom.saveForeshadowingBtn.addEventListener('click', () => this.saveForeshadowing());
+        this.dom.deleteForeshadowingBtn.addEventListener('click', () => this.deleteForeshadowing());
+        this.dom.foreshadowingExpandBtn.addEventListener('click', () => this.togglePanelExpand('foreshadowingDetailPanel', 'foreshadowingExpandIcon', 'foreshadowingShrinkIcon'));
 
         this.dom.addDictBtn.addEventListener('click', () => this.openDictionaryPanel());
         this.dom.saveDictBtn.addEventListener('click', () => this.saveDictionary());
@@ -303,6 +325,7 @@ class NovelApp {
         this.closeGlobalSettings();
         this.closeCharacterPanel();
         this.closeProgressionPanel();
+        this.closeForeshadowingPanel();
         this.closeDictionaryPanel();
         this.closePastEventModal();
         this.closeCategoryModal();
@@ -419,6 +442,7 @@ class NovelApp {
 
         this.renderCharacterList(p.characters || []); this.closeCharacterPanel();
         this.renderProgressionList(p.progression || []); this.closeProgressionPanel();
+        this.renderForeshadowingList(p.foreshadowing || []); this.closeForeshadowingPanel();
         this.renderDictionaryList(p.dictionary || []); this.closeDictionaryPanel();
         if (p.thumbnail) { this.dom.detailThumbnail.style.backgroundImage = `url(${p.thumbnail})`; this.dom.detailThumbnail.classList.remove('no-thumb'); }
         else { this.dom.detailThumbnail.style.backgroundImage = 'none'; this.dom.detailThumbnail.classList.add('no-thumb'); }
@@ -734,6 +758,76 @@ class NovelApp {
 
     async deleteProgression() { if (confirm("삭제?")) { const p = this.projects.find(x => x.id === this.currentProjectId); p.progression = p.progression.filter(x => x.id !== this.currentProgressionId); await this.updateProjectInDB(p); this.closeProgressionPanel(); } }
 
+    renderForeshadowingList(foreshadowing) {
+        this.dom.foreshadowingListUl.innerHTML = foreshadowing.length ? '' : '<li style="color:var(--text-secondary);grid-column:1/-1;text-align:center;padding:40px;">등록된 떡밥이 없습니다.</li>';
+        foreshadowing.forEach((it, i) => {
+            const li = document.createElement('li');
+            li.className = 'item-card' + (this.currentForeshadowingId === it.id ? ' active' : '');
+            li.innerHTML = `<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">${it.name}</div><div class="item-meta">${it.hiddenFact ? it.hiddenFact.substring(0, 30) + (it.hiddenFact.length > 30 ? '...' : '') : '숨겨진 사실 없음'}</div></div>`;
+            li.onclick = (e) => e.target.closest('.drag-handle') ? null : this.openForeshadowingPanel(it);
+            ListModule.setupDragAndDrop(li, i, foreshadowing, (nl) => { const p = this.projects.find(x => x.id === this.currentProjectId); p.foreshadowing = nl; this.updateProjectInDB(p).then(() => this.renderForeshadowingList(nl)); });
+            this.dom.foreshadowingListUl.appendChild(li);
+        });
+    }
+
+    openForeshadowingPanel(it = null) {
+        this.currentForeshadowingId = it?.id || null;
+        Object.keys(this.dom.foreshadowingInputs).forEach(k => this.dom.foreshadowingInputs[k].value = it?.[k] || '');
+        this.dom.deleteForeshadowingBtn.style.display = it ? 'block' : 'none';
+        this.dom.foreshadowingDetailPanel.classList.remove('hidden');
+        this.dom.foreshadowingDetailPanel.querySelector('.form-container').scrollTop = 0;
+        this.dom.themeToggle.classList.add('hidden');
+        this.dom.foreshadowingCloseBtn?.classList.remove('hidden');
+        this.dom.overlay.classList.add('visible');
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (p) this.renderForeshadowingList(p.foreshadowing || []);
+    }
+
+    closeForeshadowingPanel() {
+        this.dom.foreshadowingDetailPanel.classList.add('hidden');
+        this.dom.foreshadowingDetailPanel.classList.remove('expanded');
+        this.dom.foreshadowingExpandIcon?.classList.remove('hidden');
+        this.dom.foreshadowingShrinkIcon?.classList.add('hidden');
+        this.currentForeshadowingId = null;
+        if (this.dom.settingsPanel.classList.contains('hidden') || !this.dom.settingsPanel.classList.contains('open')) {
+            if (!this.dom.globalModal.classList.contains('visible') && this.dom.charDetailPanel.classList.contains('hidden') && this.dom.progDetailPanel.classList.contains('hidden') && this.dom.foreshadowingDetailPanel.classList.contains('hidden') && this.dom.dictDetailPanel.classList.contains('hidden')) {
+                this.dom.overlay.classList.remove('visible');
+                this.dom.themeToggle.classList.remove('hidden');
+                this.dom.foreshadowingCloseBtn?.classList.add('hidden');
+            }
+        }
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (p) this.renderForeshadowingList(p.foreshadowing || []);
+    }
+
+    async saveForeshadowing() {
+        const name = this.dom.foreshadowingInputs.name.value.trim();
+        if (!name) return alert("명칭은 필수입니다.");
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (!p.foreshadowing) p.foreshadowing = [];
+        const d = { id: this.currentForeshadowingId || Date.now().toString() };
+        Object.keys(this.dom.foreshadowingInputs).forEach(k => d[k] = this.dom.foreshadowingInputs[k].value.trim());
+
+        if (this.currentForeshadowingId) {
+            const idx = p.foreshadowing.findIndex(x => x.id === this.currentForeshadowingId);
+            p.foreshadowing[idx] = d;
+        } else {
+            p.foreshadowing.push(d);
+        }
+        await this.updateProjectInDB(p);
+        this.closeForeshadowingPanel();
+        alert("저장됨");
+    }
+
+    async deleteForeshadowing() {
+        if (confirm("이 떡밥을 삭제하시겠습니까?")) {
+            const p = this.projects.find(x => x.id === this.currentProjectId);
+            p.foreshadowing = p.foreshadowing.filter(x => x.id !== this.currentForeshadowingId);
+            await this.updateProjectInDB(p);
+            this.closeForeshadowingPanel();
+        }
+    }
+    
     renderDictionaryList(dict) {
         this.dom.dictListUl.innerHTML = dict.length ? '' : '<li style="color:var(--text-secondary);grid-column:1/-1;text-align:center;padding:40px;">등록된 고유어 항목이 없습니다.</li>';
         dict.forEach((it, i) => {
