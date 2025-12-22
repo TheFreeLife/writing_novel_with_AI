@@ -321,7 +321,19 @@ class NovelApp {
         document.getElementById(tabId).classList.add('active');
 
         if (tabId === 'tab-relations') {
-            renderRelationshipMap('relationship-map-container');
+            const p = this.projects.find(x => x.id === this.currentProjectId);
+            if (p) {
+                renderRelationshipMap(
+                    'relationship-map-container',
+                    p.characters || [],
+                    p.relationships || [],
+                    async (newChars, newRels) => {
+                        p.characters = newChars;
+                        p.relationships = newRels;
+                        await this.updateProjectInDB(p);
+                    }
+                );
+            }
         }
     }
 
@@ -344,22 +356,22 @@ class NovelApp {
         this.projects.forEach(p => {
             const li = document.createElement('li');
             li.dataset.projectId = p.id;
-            
+
             const thumbHTML = p.thumbnail ? '<img src="' + p.thumbnail + '" class="project-thumb">' : '<div class="project-thumb no-thumb"></div>';
             const tagsHTML = (p.tags || []).map(t => '<span class="tag-badge">#' + t + '</span>').join('');
 
             li.innerHTML = thumbHTML +
                 '<div class="project-info">' +
-                    '<span class="project-title">' + p.name + '</span>' +
-                    '<span class="project-description">' + (p.description || '설명 없음') + '</span>' +
-                    '<div class="project-tags">' + tagsHTML + '</div>' +
+                '<span class="project-title">' + p.name + '</span>' +
+                '<span class="project-description">' + (p.description || '설명 없음') + '</span>' +
+                '<div class="project-tags">' + tagsHTML + '</div>' +
                 '</div>' +
                 '<div class="project-menu-container">' +
-                    '<button class="kebab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>' +
-                    '<div class="dropdown-menu">' +
-                        '<button class="dropdown-item edit">수정</button>' +
-                        '<button class="dropdown-item delete">삭제</button>' +
-                    '</div>' +
+                '<button class="kebab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>' +
+                '<div class="dropdown-menu">' +
+                '<button class="dropdown-item edit">수정</button>' +
+                '<button class="dropdown-item delete">삭제</button>' +
+                '</div>' +
                 '</div>';
 
             li.querySelector('.kebab-btn').onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('visible')); li.querySelector('.dropdown-menu').classList.toggle('visible'); };
@@ -436,7 +448,7 @@ class NovelApp {
         });
         const bg = p.backgroundSettings || {};
         this.dom.projBgWorld.value = bg.world || '';
-        
+
         if (bg.events && typeof bg.events === 'string') {
             p.backgroundSettings.events = [{
                 name: '기존 사건 기록',
@@ -486,7 +498,7 @@ class NovelApp {
         if (!p.backgroundSettings) p.backgroundSettings = {};
 
         p.backgroundSettings.world = this.dom.projBgWorld.value.trim();
-        
+
         await this.updateProjectInDB(p);
         alert("배경 지식이 저장되었습니다.");
     }
@@ -504,11 +516,11 @@ class NovelApp {
             li.innerHTML =
                 '<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div>' +
                 '<div class="item-content">' +
-                    '<div class="item-name">' + ev.name + ' <span style="font-weight:normal;color:var(--text-secondary);font-size:0.9em;">(' + (ev.time || '시점 미지정') + ')</span></div>' +
-                    '<div class="item-meta">' + (ev.detail || '').substring(0, 50) + (ev.detail.length > 50 ? '...' : '') + '</div>' +
+                '<div class="item-name">' + ev.name + ' <span style="font-weight:normal;color:var(--text-secondary);font-size:0.9em;">(' + (ev.time || '시점 미지정') + ')</span></div>' +
+                '<div class="item-meta">' + (ev.detail || '').substring(0, 50) + (ev.detail.length > 50 ? '...' : '') + '</div>' +
                 '</div>' +
                 '<button class="sub-item-delete">&times;</button>';
-            
+
             li.addEventListener('click', (e) => {
                 if (e.target.classList.contains('sub-item-delete') || e.target.closest('.sub-item-delete')) {
                 } else if (e.target.classList.contains('drag-handle') || e.target.closest('.drag-handle')) {
@@ -525,7 +537,7 @@ class NovelApp {
                     this.renderBackgroundEventsList();
                 }
             });
-            
+
             ListModule.setupDragAndDrop(li, i, p.backgroundSettings.events, async (newList) => {
                 p.backgroundSettings.events = newList;
                 await StorageManager.set(StorageManager.STORE_PROJECTS, p);
@@ -541,7 +553,7 @@ class NovelApp {
         const p = this.projects.find(x => x.id === this.currentProjectId);
         const events = p.backgroundSettings?.events || [];
         const ev = index !== null ? events[index] : { time: '', name: '', detail: '', impact: '' };
-        
+
         Object.keys(this.dom.projBgEventInputs).forEach(key => {
             this.dom.projBgEventInputs[key].value = ev[key] || '';
         });
@@ -559,8 +571,8 @@ class NovelApp {
         if (!name) return alert("사건 이름은 필수입니다.");
 
         const p = this.projects.find(x => x.id === this.currentProjectId);
-        if(!p.backgroundSettings) p.backgroundSettings = {};
-        if(!p.backgroundSettings.events) p.backgroundSettings.events = [];
+        if (!p.backgroundSettings) p.backgroundSettings = {};
+        if (!p.backgroundSettings.events) p.backgroundSettings.events = [];
 
         const eventData = {};
         Object.keys(this.dom.projBgEventInputs).forEach(key => {
@@ -836,7 +848,7 @@ class NovelApp {
             this.closeForeshadowingPanel();
         }
     }
-    
+
     renderDictionaryList(dict) {
         this.dom.dictListUl.innerHTML = dict.length ? '' : '<li style="color:var(--text-secondary);grid-column:1/-1;text-align:center;padding:40px;">등록된 고유어 항목이 없습니다.</li>';
         dict.forEach((it, i) => {
@@ -853,7 +865,7 @@ class NovelApp {
         const p = this.projects.find(x => x.id === this.currentProjectId);
         const categorySelect = this.dom.dictInputs.category;
         const currentCategory = it?.category || (p.dictionaryCategories.length > 0 ? p.dictionaryCategories[0] : '');
-    
+
         categorySelect.innerHTML = '';
         p.dictionaryCategories.forEach(cat => {
             const option = document.createElement('option');
@@ -862,10 +874,10 @@ class NovelApp {
             categorySelect.appendChild(option);
         });
         categorySelect.value = currentCategory;
-    
+
         this.dom.dictInputs.name.value = it?.name || '';
         this.dom.dictInputs.description.value = it?.description || '';
-    
+
         this.dom.dictDetailPanel.classList.remove('hidden');
         this.dom.dictDetailPanel.querySelector('.form-container').scrollTop = 0;
         this.dom.themeToggle.classList.add('hidden');
@@ -925,7 +937,7 @@ class NovelApp {
             }
             li.innerHTML = '<span>' + cat + '</span>' +
                 '<div class="category-item-buttons">' +
-                    '<button class="delete-cat-btn">삭제</button>' +
+                '<button class="delete-cat-btn">삭제</button>' +
                 '</div>';
             li.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-cat-btn')) {
@@ -990,12 +1002,12 @@ class NovelApp {
         if (isInUse) {
             return alert('해당 카테고리를 사용하는 고유어가 있어 삭제할 수 없습니다.');
         }
-        
+
         if (!confirm("'" + categoryToDelete + "' 카테고리를 삭제하시겠습니까?")) return;
 
         p.dictionaryCategories.splice(index, 1);
         await this.updateProjectInDB(p);
-        
+
         if (this.currentEditingCategoryIndex === index) {
             this.currentEditingCategoryIndex = null;
             this.dom.dictCategoryInput.value = '';
@@ -1015,7 +1027,7 @@ class NovelApp {
         UIHelper.openModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.add('hidden');
     }
 
-    closeGlobalSettings() { UIHelper.closeModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.remove('hidden');}
+    closeGlobalSettings() { UIHelper.closeModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.remove('hidden'); }
 
     saveGlobalSettings() { const ns = {}; Object.keys(this.dom.globalInputs).forEach(k => ns[k] = this.dom.globalInputs[k].value.trim()); localStorage.setItem('global_novel_prompt_settings', JSON.stringify(ns)); alert("저장됨"); this.closeGlobalSettings(); }
 
@@ -1042,7 +1054,7 @@ class NovelApp {
 
     handleFontSizeNumberChange() { let v = parseInt(this.dom.sizeNumber.value); v = Math.max(12, Math.min(100, v || 16)); this.updateEditorPreview('fontSize', v.toString()); }
 
-    openEditorSettings() { this.dom.settingsPanel.classList.add('open'); this.dom.overlay.classList.add('visible'); this.dom.themeToggle.classList.add('hidden');}
+    openEditorSettings() { this.dom.settingsPanel.classList.add('open'); this.dom.overlay.classList.add('visible'); this.dom.themeToggle.classList.add('hidden'); }
 
     closeEditorSettings() {
         this.dom.settingsPanel.classList.remove('open');
@@ -1050,6 +1062,14 @@ class NovelApp {
             this.dom.overlay.classList.remove('visible');
             this.dom.themeToggle.classList.remove('hidden');
         }
+    }
+    async updateProjectInDB(project) {
+        if (!project) return;
+        const index = this.projects.findIndex(p => p.id === project.id);
+        if (index !== -1) {
+            this.projects[index] = project;
+        }
+        await StorageManager.set(StorageManager.STORE_PROJECTS, project);
     }
 }
 

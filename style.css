@@ -923,7 +923,8 @@ body {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23656d76' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 14px center;
-    padding-right: 40px; /* 화살표 공간 확보 */
+    padding-right: 40px;
+    /* 화살표 공간 확보 */
 }
 
 .reset-btn {
@@ -1505,10 +1506,11 @@ body {
     fill: var(--text-color);
     font-size: 15px;
     font-weight: 700;
-    pointer-events: none; /* 텍스트가 이벤트를 가로채지 않도록 설정 */
+    pointer-events: none;
+    /* 텍스트가 이벤트를 가로채지 않도록 설정 */
 }
 
-.node .center-node + .node-label {
+.node .center-node+.node-label {
     fill: white;
 }
 
