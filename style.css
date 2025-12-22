@@ -1481,3 +1481,63 @@ body {
     border-color: #ef4444;
     color: white;
 }
+
+/* --- 관계도 스타일 --- */
+.relationship-svg {
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: default;
+    user-select: none;
+}
+
+.node .node-circle {
+    fill: var(--card-bg);
+    stroke: var(--primary-color);
+    stroke-width: 3px;
+    transition: all 0.2s ease;
+}
+
+.node .node-circle.center-node {
+    stroke-width: 4px;
+    fill: var(--primary-color);
+}
+
+.node .node-label {
+    fill: var(--text-color);
+    font-size: 15px;
+    font-weight: 700;
+    pointer-events: none; /* 텍스트가 이벤트를 가로채지 않도록 설정 */
+}
+
+.node .center-node + .node-label {
+    fill: white;
+}
+
+
+[data-theme="dark"] .node .node-circle.center-node {
+    fill: var(--primary-hover);
+}
+
+
+.node:hover .node-circle {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg);
+}
+
+.relationship-line {
+    stroke: var(--border-color);
+    stroke-width: 2px;
+}
+
+.relationship-label-bg {
+    fill: var(--bg-color);
+}
+
+.relationship-label {
+    fill: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.arrow-path {
+    fill: var(--border-color);
+}

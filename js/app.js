@@ -6,6 +6,7 @@
 import { StorageManager } from './storage.js';
 import { UIHelper } from './ui-helper.js';
 import { ListModule } from './list-module.js';
+import { renderRelationshipMap } from './relationship-map.js';
 
 class NovelApp {
     constructor() {
@@ -316,7 +317,12 @@ class NovelApp {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-        document.getElementById(btn.dataset.tab).classList.add('active');
+        const tabId = btn.dataset.tab;
+        document.getElementById(tabId).classList.add('active');
+
+        if (tabId === 'tab-relations') {
+            renderRelationshipMap('relationship-map-container');
+        }
     }
 
     closeAllOverlappingUIs() {
@@ -338,20 +344,24 @@ class NovelApp {
         this.projects.forEach(p => {
             const li = document.createElement('li');
             li.dataset.projectId = p.id;
-            li.innerHTML = `
-                ${p.thumbnail ? `<img src="${p.thumbnail}" class="project-thumb">` : `<div class="project-thumb no-thumb"></div>`}
-                <div class="project-info">
-                    <span class="project-title">${p.name}</span>
-                    <span class="project-description">${p.description || '설명 없음'}</span>
-                    <div class="project-tags">${(p.tags || []).map(t => `<span class="tag-badge">#${t}</span>`).join('')}</div>
-                </div>
-                <div class="project-menu-container">
-                    <button class="kebab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item edit">수정</button>
-                        <button class="dropdown-item delete">삭제</button>
-                    </div>
-                </div>`;
+            
+            const thumbHTML = p.thumbnail ? '<img src="' + p.thumbnail + '" class="project-thumb">' : '<div class="project-thumb no-thumb"></div>';
+            const tagsHTML = (p.tags || []).map(t => '<span class="tag-badge">#' + t + '</span>').join('');
+
+            li.innerHTML = thumbHTML +
+                '<div class="project-info">' +
+                    '<span class="project-title">' + p.name + '</span>' +
+                    '<span class="project-description">' + (p.description || '설명 없음') + '</span>' +
+                    '<div class="project-tags">' + tagsHTML + '</div>' +
+                '</div>' +
+                '<div class="project-menu-container">' +
+                    '<button class="kebab-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></button>' +
+                    '<div class="dropdown-menu">' +
+                        '<button class="dropdown-item edit">수정</button>' +
+                        '<button class="dropdown-item delete">삭제</button>' +
+                    '</div>' +
+                '</div>';
+
             li.querySelector('.kebab-btn').onclick = (e) => { e.stopPropagation(); document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('visible')); li.querySelector('.dropdown-menu').classList.toggle('visible'); };
             li.querySelector('.edit').onclick = (e) => { e.stopPropagation(); this.openProjectModal(p); };
             li.querySelector('.delete').onclick = (e) => { e.stopPropagation(); this.handleDeleteProject(p.id); };
@@ -411,7 +421,6 @@ class NovelApp {
         const p = this.projects.find(x => x.id === id);
         if (!p) return;
 
-        // Data migration for dictionary categories
         if (!p.dictionaryCategories) {
             p.dictionaryCategories = ['장소', '아이템', '몬스터', '길드'];
             await StorageManager.set(StorageManager.STORE_PROJECTS, p);
@@ -428,7 +437,6 @@ class NovelApp {
         const bg = p.backgroundSettings || {};
         this.dom.projBgWorld.value = bg.world || '';
         
-        // Data migration for background events
         if (bg.events && typeof bg.events === 'string') {
             p.backgroundSettings.events = [{
                 name: '기존 사건 기록',
@@ -444,7 +452,7 @@ class NovelApp {
         this.renderProgressionList(p.progression || []); this.closeProgressionPanel();
         this.renderForeshadowingList(p.foreshadowing || []); this.closeForeshadowingPanel();
         this.renderDictionaryList(p.dictionary || []); this.closeDictionaryPanel();
-        if (p.thumbnail) { this.dom.detailThumbnail.style.backgroundImage = `url(${p.thumbnail})`; this.dom.detailThumbnail.classList.remove('no-thumb'); }
+        if (p.thumbnail) { this.dom.detailThumbnail.style.backgroundImage = 'url(' + p.thumbnail + ')'; this.dom.detailThumbnail.classList.remove('no-thumb'); }
         else { this.dom.detailThumbnail.style.backgroundImage = 'none'; this.dom.detailThumbnail.classList.add('no-thumb'); }
         this.switchTab(document.querySelector('.tab-btn[data-tab="tab-settings"]'));
         UIHelper.showView('project-detail-view');
@@ -455,7 +463,7 @@ class NovelApp {
         this.dom.detailTagsContainer.innerHTML = '';
         (p.tags || []).forEach((t, i) => {
             const s = document.createElement('span'); s.className = 'tag-badge';
-            s.innerHTML = `#${t} <span class="remove-tag">&times;</span>`;
+            s.innerHTML = '#' + t + ' <span class="remove-tag">&times;</span>';
             s.querySelector('.remove-tag').onclick = async () => { p.tags.splice(i, 1); await this.updateProjectInDB(p); this.renderDetailTags(p); };
             this.dom.detailTagsContainer.appendChild(s);
         });
@@ -478,7 +486,6 @@ class NovelApp {
         if (!p.backgroundSettings) p.backgroundSettings = {};
 
         p.backgroundSettings.world = this.dom.projBgWorld.value.trim();
-        // Events are now saved automatically
         
         await this.updateProjectInDB(p);
         alert("배경 지식이 저장되었습니다.");
@@ -494,20 +501,17 @@ class NovelApp {
         events.forEach((ev, i) => {
             const li = document.createElement('li');
             li.className = 'item-card';
-            li.innerHTML = `
-                <div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div>
-                <div class="item-content">
-                    <div class="item-name">${ev.name} <span style="font-weight:normal;color:var(--text-secondary);font-size:0.9em;">(${ev.time || '시점 미지정'})</span></div>
-                    <div class="item-meta">${(ev.detail || '').substring(0, 50)}${ev.detail.length > 50 ? '...' : ''}</div>
-                </div>
-                <button class="sub-item-delete">&times;</button>
-            `;
+            li.innerHTML =
+                '<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div>' +
+                '<div class="item-content">' +
+                    '<div class="item-name">' + ev.name + ' <span style="font-weight:normal;color:var(--text-secondary);font-size:0.9em;">(' + (ev.time || '시점 미지정') + ')</span></div>' +
+                    '<div class="item-meta">' + (ev.detail || '').substring(0, 50) + (ev.detail.length > 50 ? '...' : '') + '</div>' +
+                '</div>' +
+                '<button class="sub-item-delete">&times;</button>';
             
             li.addEventListener('click', (e) => {
                 if (e.target.classList.contains('sub-item-delete') || e.target.closest('.sub-item-delete')) {
-                    // handled by its own listener
                 } else if (e.target.classList.contains('drag-handle') || e.target.closest('.drag-handle')) {
-                    // handled by ListModule
                 } else {
                     this.openBackgroundEventModal(i);
                 }
@@ -515,7 +519,7 @@ class NovelApp {
 
             li.querySelector('.sub-item-delete').addEventListener('click', async (e) => {
                 e.stopPropagation();
-                if (confirm(`'${ev.name}' 사건을 삭제하시겠습니까?`)) {
+                if (confirm("'" + ev.name + "' 사건을 삭제하시겠습니까?")) {
                     p.backgroundSettings.events.splice(i, 1);
                     await this.updateProjectInDB(p);
                     this.renderBackgroundEventsList();
@@ -524,8 +528,8 @@ class NovelApp {
             
             ListModule.setupDragAndDrop(li, i, p.backgroundSettings.events, async (newList) => {
                 p.backgroundSettings.events = newList;
-                await StorageManager.set(StorageManager.STORE_PROJECTS, p); // Silently save order
-                this.renderBackgroundEventsList(); // Re-render to fix indices and listeners
+                await StorageManager.set(StorageManager.STORE_PROJECTS, p);
+                this.renderBackgroundEventsList();
             });
 
             this.dom.projBgEventsList.appendChild(li);
@@ -574,14 +578,12 @@ class NovelApp {
         this.closeBackgroundEventModal();
     }
 
-
-    async updateProjectInDB(p) { await StorageManager.set(StorageManager.STORE_PROJECTS, p); await this.renderProjectList(); }
-
     renderCharacterList(chars) {
         this.dom.charListUl.innerHTML = chars.length ? '' : '<li style="color:var(--text-secondary);grid-column:1/-1;text-align:center;padding:40px;">등록된 등장인물이 없습니다.</li>';
         chars.forEach((c, i) => {
-            const li = document.createElement('li'); li.className = 'item-card' + (this.currentCharacterId === c.id ? ' active' : '');
-            li.innerHTML = `<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">${c.name}</div><div class="item-meta">${c.role || '역할 미지정'} | ${c.race || '종족 미상'}</div></div>`;
+            const li = document.createElement('li');
+            li.className = 'item-card' + (this.currentCharacterId === c.id ? ' active' : '');
+            li.innerHTML = '<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">' + c.name + '</div><div class="item-meta">' + (c.role || '역할 미지정') + ' | ' + (c.race || '종족 미상') + '</div></div>';
             li.onclick = (e) => e.target.closest('.drag-handle') ? null : this.openCharacterPanel(c);
             ListModule.setupDragAndDrop(li, i, chars, (nl) => { const p = this.projects.find(x => x.id === this.currentProjectId); p.characters = nl; this.updateProjectInDB(p).then(() => this.renderCharacterList(nl)); });
             this.dom.charListUl.appendChild(li);
@@ -594,11 +596,9 @@ class NovelApp {
         this.tempPastEvents = c?.pastEvents ? [...c.pastEvents] : [];
         this.tempSpeechExamples = c?.speechExamples ? [...c.speechExamples] : [];
 
-        // Migration and initialization for Likes
         const rawLikes = c?.likes || c?.tempLikes || c?.prefLikes;
         this.tempLikes = Array.isArray(rawLikes) ? [...rawLikes] : (typeof rawLikes === 'string' ? [rawLikes] : []);
 
-        // Migration and initialization for Dislikes
         const rawDislikes = c?.dislikes || c?.tempDislikes || c?.prefDislikes;
         this.tempDislikes = Array.isArray(rawDislikes) ? [...rawDislikes] : (typeof rawDislikes === 'string' ? [rawDislikes] : []);
 
@@ -622,7 +622,9 @@ class NovelApp {
         this.currentCharacterId = null;
         if (this.dom.settingsPanel.classList.contains('hidden') || !this.dom.settingsPanel.classList.contains('open')) {
             if (!this.dom.globalModal.classList.contains('visible')) {
-                this.dom.overlay.classList.remove('visible'); this.dom.themeToggle.classList.remove('hidden'); this.dom.panelCloseBtn?.classList.add('hidden');
+                this.dom.overlay.classList.remove('visible');
+                this.dom.themeToggle.classList.remove('hidden');
+                this.dom.panelCloseBtn?.classList.add('hidden');
             }
         }
         const p = this.projects.find(x => x.id === this.currentProjectId); if (p) this.renderCharacterList(p.characters || []);
@@ -650,11 +652,12 @@ class NovelApp {
     renderPastEventsList() {
         this.dom.pastEventsList.innerHTML = this.tempPastEvents.length ? '' : '<div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;padding:10px;">등록된 과거 사건이 없습니다.</div>';
         this.tempPastEvents.forEach((ev, i) => {
-            const d = document.createElement('div'); d.className = 'sub-item-card'; d.innerHTML = `<div class="sub-item-title">${ev.summary}</div><div class="sub-item-desc">${ev.detail}</div><button class="sub-item-delete">&times;</button>`;
+            const d = document.createElement('div'); d.className = 'sub-item-card';
+            d.innerHTML = '<div class="sub-item-title">' + ev.summary + '</div><div class="sub-item-desc">' + ev.detail + '</div><button class="sub-item-delete">&times;</button>';
             d.onclick = (e) => e.target.classList.contains('sub-item-delete') ? null : this.openPastEventModal(i);
             d.querySelector('.sub-item-delete').onclick = () => {
                 const eventSummary = this.tempPastEvents[i].summary || '이름 없는 사건';
-                if (confirm(`'${eventSummary}' 사건을 삭제하시겠습니까?`)) {
+                if (confirm("'" + eventSummary + "' 사건을 삭제하시겠습니까?")) {
                     this.tempPastEvents.splice(i, 1);
                     this.renderPastEventsList();
                 }
@@ -682,7 +685,8 @@ class NovelApp {
     renderSpeechExamplesList() {
         this.dom.speechExamplesList.innerHTML = this.tempSpeechExamples.length ? '' : '<div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;padding:10px;">등록된 대사 예시가 없습니다.</div>';
         this.tempSpeechExamples.forEach((s, i) => {
-            const d = document.createElement('div'); d.className = 'speech-example-item'; d.innerHTML = `<span>${s}</span><button class="item-delete-btn">&times;</button>`;
+            const d = document.createElement('div'); d.className = 'speech-example-item';
+            d.innerHTML = '<span>' + s + '</span><button class="item-delete-btn">&times;</button>';
             d.querySelector('.item-delete-btn').onclick = () => { this.tempSpeechExamples.splice(i, 1); this.renderSpeechExamplesList(); };
             this.dom.speechExamplesList.appendChild(d);
         });
@@ -693,11 +697,11 @@ class NovelApp {
     renderSimpleList(listKey, dataArray) {
         const container = this.dom[listKey];
         if (!container) return;
-        container.innerHTML = dataArray.length ? '' : `<div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;padding:10px;">등록된 항목이 없습니다.</div>`;
+        container.innerHTML = dataArray.length ? '' : '<div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;padding:10px;">등록된 항목이 없습니다.</div>';
         dataArray.forEach((item, i) => {
             const div = document.createElement('div');
             div.className = 'speech-example-item';
-            div.innerHTML = `<span>${item}</span><button class="item-delete-btn">&times;</button>`;
+            div.innerHTML = '<span>' + item + '</span><button class="item-delete-btn">&times;</button>';
             div.querySelector('.item-delete-btn').onclick = () => {
                 dataArray.splice(i, 1);
                 this.renderSimpleList(listKey, dataArray);
@@ -720,7 +724,7 @@ class NovelApp {
         this.dom.progListUl.innerHTML = prog.length ? '' : '<li style="color:var(--text-secondary);grid-column:1/-1;text-align:center;padding:40px;">등록된 전개 항목이 없습니다.</li>';
         prog.forEach((it, i) => {
             const li = document.createElement('li'); li.className = 'item-card' + (this.currentProgressionId === it.id ? ' active' : '');
-            li.innerHTML = `<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">${i + 1}화</div><div class="item-meta">${it.summary ? it.summary.substring(0, 30) + (it.summary.length > 30 ? '...' : '') : '내용 없음'}</div></div>`;
+            li.innerHTML = '<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">' + (i + 1) + '화</div><div class="item-meta">' + (it.summary ? it.summary.substring(0, 30) + (it.summary.length > 30 ? '...' : '') : '내용 없음') + '</div></div>';
             li.onclick = (e) => e.target.closest('.drag-handle') ? null : this.openProgressionPanel(it, i);
             ListModule.setupDragAndDrop(li, i, prog, (nl) => { const p = this.projects.find(x => x.id === this.currentProjectId); p.progression = nl; this.updateProjectInDB(p).then(() => this.renderProgressionList(nl)); });
             this.dom.progListUl.appendChild(li);
@@ -729,10 +733,13 @@ class NovelApp {
 
     openProgressionPanel(it = null, idx = null) {
         this.currentProgressionId = it?.id || null;
-        if (it) { this.dom.progEpisodeDisplay.textContent = `${idx + 1}화 (자동 배정)`; this.dom.progSummary.value = it.summary || ''; this.dom.progPoints.value = it.points || ''; this.dom.deleteProgBtn.style.display = 'block'; }
-        else { const p = this.projects.find(x => x.id === this.currentProjectId); this.dom.progEpisodeDisplay.textContent = `${(p.progression?.length || 0) + 1}화 (자동 배정)`; this.dom.progSummary.value = ''; this.dom.progPoints.value = ''; this.dom.deleteProgBtn.style.display = 'none'; }
-        this.dom.progDetailPanel.classList.remove('hidden'); this.dom.progDetailPanel.querySelector('.form-container').scrollTop = 0;
-        this.dom.themeToggle.classList.add('hidden'); this.dom.progCloseBtn?.classList.remove('hidden'); this.dom.overlay.classList.add('visible');
+        if (it) { this.dom.progEpisodeDisplay.textContent = (idx + 1) + '화 (자동 배정)'; this.dom.progSummary.value = it.summary || ''; this.dom.progPoints.value = it.points || ''; this.dom.deleteProgBtn.style.display = 'block'; }
+        else { const p = this.projects.find(x => x.id === this.currentProjectId); this.dom.progEpisodeDisplay.textContent = ((p.progression?.length || 0) + 1) + '화 (자동 배정)'; this.dom.progSummary.value = ''; this.dom.progPoints.value = ''; this.dom.deleteProgBtn.style.display = 'none'; }
+        this.dom.progDetailPanel.classList.remove('hidden');
+        this.dom.progDetailPanel.querySelector('.form-container').scrollTop = 0;
+        this.dom.themeToggle.classList.add('hidden');
+        this.dom.progCloseBtn?.classList.remove('hidden');
+        this.dom.overlay.classList.add('visible');
         const p = this.projects.find(x => x.id === this.currentProjectId); if (p) this.renderProgressionList(p.progression || []);
     }
 
@@ -742,7 +749,9 @@ class NovelApp {
         this.currentProgressionId = null;
         if (this.dom.settingsPanel.classList.contains('hidden') || !this.dom.settingsPanel.classList.contains('open')) {
             if (!this.dom.globalModal.classList.contains('visible') && this.dom.charDetailPanel.classList.contains('hidden')) {
-                this.dom.overlay.classList.remove('visible'); this.dom.themeToggle.classList.remove('hidden'); this.dom.progCloseBtn?.classList.add('hidden');
+                this.dom.overlay.classList.remove('visible');
+                this.dom.themeToggle.classList.remove('hidden');
+                this.dom.progCloseBtn?.classList.add('hidden');
             }
         }
         const p = this.projects.find(x => x.id === this.currentProjectId); if (p) this.renderProgressionList(p.progression || []);
@@ -763,7 +772,7 @@ class NovelApp {
         foreshadowing.forEach((it, i) => {
             const li = document.createElement('li');
             li.className = 'item-card' + (this.currentForeshadowingId === it.id ? ' active' : '');
-            li.innerHTML = `<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">${it.name}</div><div class="item-meta">${it.hiddenFact ? it.hiddenFact.substring(0, 30) + (it.hiddenFact.length > 30 ? '...' : '') : '숨겨진 사실 없음'}</div></div>`;
+            li.innerHTML = '<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">' + it.name + '</div><div class="item-meta">' + (it.hiddenFact ? it.hiddenFact.substring(0, 30) + (it.hiddenFact.length > 30 ? '...' : '') : '숨겨진 사실 없음') + '</div></div>';
             li.onclick = (e) => e.target.closest('.drag-handle') ? null : this.openForeshadowingPanel(it);
             ListModule.setupDragAndDrop(li, i, foreshadowing, (nl) => { const p = this.projects.find(x => x.id === this.currentProjectId); p.foreshadowing = nl; this.updateProjectInDB(p).then(() => this.renderForeshadowingList(nl)); });
             this.dom.foreshadowingListUl.appendChild(li);
@@ -832,68 +841,39 @@ class NovelApp {
         this.dom.dictListUl.innerHTML = dict.length ? '' : '<li style="color:var(--text-secondary);grid-column:1/-1;text-align:center;padding:40px;">등록된 고유어 항목이 없습니다.</li>';
         dict.forEach((it, i) => {
             const li = document.createElement('li'); li.className = 'item-card' + (this.currentDictionaryId === it.id ? ' active' : '');
-            li.innerHTML = `<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">${it.name}</div><div class="item-meta">${it.category || '미분류'}</div></div>`;
+            li.innerHTML = '<div class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></div><div class="item-content"><div class="item-name">' + it.name + '</div><div class="item-meta">' + (it.category || '미분류') + '</div></div>';
             li.onclick = (e) => e.target.closest('.drag-handle') ? null : this.openDictionaryPanel(it);
             ListModule.setupDragAndDrop(li, i, dict, (nl) => { const p = this.projects.find(x => x.id === this.currentProjectId); p.dictionary = nl; this.updateProjectInDB(p).then(() => this.renderDictionaryList(nl)); });
             this.dom.dictListUl.appendChild(li);
         });
     }
 
-        openDictionaryPanel(it = null) {
-
-            this.currentDictionaryId = it?.id || null;
-
+    openDictionaryPanel(it = null) {
+        this.currentDictionaryId = it?.id || null;
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        const categorySelect = this.dom.dictInputs.category;
+        const currentCategory = it?.category || (p.dictionaryCategories.length > 0 ? p.dictionaryCategories[0] : '');
     
-
-            const p = this.projects.find(x => x.id === this.currentProjectId);
-
-            const categorySelect = this.dom.dictInputs.category;
-
-            const currentCategory = it?.category || (p.dictionaryCategories.length > 0 ? p.dictionaryCategories[0] : '');
-
+        categorySelect.innerHTML = '';
+        p.dictionaryCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            categorySelect.appendChild(option);
+        });
+        categorySelect.value = currentCategory;
     
-
-            categorySelect.innerHTML = ''; // Clear existing options
-
-            p.dictionaryCategories.forEach(cat => {
-
-                const option = document.createElement('option');
-
-                option.value = cat;
-
-                option.textContent = cat;
-
-                categorySelect.appendChild(option);
-
-            });
-
-            categorySelect.value = currentCategory;
-
+        this.dom.dictInputs.name.value = it?.name || '';
+        this.dom.dictInputs.description.value = it?.description || '';
     
-
-            // Set other inputs
-
-            this.dom.dictInputs.name.value = it?.name || '';
-
-            this.dom.dictInputs.description.value = it?.description || '';
-
-    
-
-            this.dom.dictDetailPanel.classList.remove('hidden');
-
-            this.dom.dictDetailPanel.querySelector('.form-container').scrollTop = 0;
-
-            this.dom.themeToggle.classList.add('hidden');
-
-            this.dom.dictCloseBtn?.classList.remove('hidden');
-
-            this.dom.overlay.classList.add('visible');
-
-            this.dom.deleteDictBtn.style.display = it ? 'block' : 'none';
-
-            if (p) this.renderDictionaryList(p.dictionary || []);
-
-        }
+        this.dom.dictDetailPanel.classList.remove('hidden');
+        this.dom.dictDetailPanel.querySelector('.form-container').scrollTop = 0;
+        this.dom.themeToggle.classList.add('hidden');
+        this.dom.dictCloseBtn?.classList.remove('hidden');
+        this.dom.overlay.classList.add('visible');
+        this.dom.deleteDictBtn.style.display = it ? 'block' : 'none';
+        if (p) this.renderDictionaryList(p.dictionary || []);
+    }
 
     closeDictionaryPanel() {
         this.dom.dictDetailPanel.classList.add('hidden'); this.dom.dictDetailPanel.classList.remove('expanded');
@@ -901,7 +881,9 @@ class NovelApp {
         this.currentDictionaryId = null;
         if (this.dom.settingsPanel.classList.contains('hidden') || !this.dom.settingsPanel.classList.contains('open')) {
             if (!this.dom.globalModal.classList.contains('visible') && this.dom.charDetailPanel.classList.contains('hidden') && this.dom.progDetailPanel.classList.contains('hidden')) {
-                this.dom.overlay.classList.remove('visible'); this.dom.themeToggle.classList.remove('hidden'); this.dom.dictCloseBtn?.classList.add('hidden');
+                this.dom.overlay.classList.remove('visible');
+                this.dom.themeToggle.classList.remove('hidden');
+                this.dom.dictCloseBtn?.classList.add('hidden');
             }
         }
         const p = this.projects.find(x => x.id === this.currentProjectId); if (p) this.renderDictionaryList(p.dictionary || []);
@@ -941,12 +923,10 @@ class NovelApp {
             if (this.currentEditingCategoryIndex === index) {
                 li.classList.add('selected');
             }
-            li.innerHTML = `
-                <span>${cat}</span>
-                <div class="category-item-buttons">
-                    <button class="delete-cat-btn">삭제</button>
-                </div>
-            `;
+            li.innerHTML = '<span>' + cat + '</span>' +
+                '<div class="category-item-buttons">' +
+                    '<button class="delete-cat-btn">삭제</button>' +
+                '</div>';
             li.addEventListener('click', (e) => {
                 if (e.target.classList.contains('delete-cat-btn')) {
                     this.handleCategoryDelete(index);
@@ -960,18 +940,16 @@ class NovelApp {
 
     handleCategorySelect(index) {
         if (this.currentEditingCategoryIndex === index) {
-            // Item is already selected, so deselect it
             this.currentEditingCategoryIndex = null;
             this.dom.dictCategoryInput.value = '';
             this.dom.saveDictCategoryBtn.textContent = '추가';
         } else {
-            // A new item is selected for editing
             const p = this.projects.find(x => x.id === this.currentProjectId);
             this.currentEditingCategoryIndex = index;
             this.dom.dictCategoryInput.value = p.dictionaryCategories[index];
             this.dom.saveDictCategoryBtn.textContent = '수정';
         }
-        this.renderCategoryList(); // Re-render to show selection change
+        this.renderCategoryList();
     }
 
     async handleCategorySave() {
@@ -985,17 +963,14 @@ class NovelApp {
         }
 
         if (this.currentEditingCategoryIndex !== null) {
-            // Update
             const oldCategory = p.dictionaryCategories[this.currentEditingCategoryIndex];
             p.dictionaryCategories[this.currentEditingCategoryIndex] = newCategory;
-            // Update all dictionary items that use the old category
             (p.dictionary || []).forEach(item => {
                 if (item.category === oldCategory) {
                     item.category = newCategory;
                 }
             });
         } else {
-            // Add new
             p.dictionaryCategories.push(newCategory);
         }
 
@@ -1004,7 +979,7 @@ class NovelApp {
         this.dom.dictCategoryInput.value = '';
         this.dom.saveDictCategoryBtn.textContent = '추가';
         this.renderCategoryList();
-        this.renderDictionaryList(p.dictionary || []); // Also re-render the dictionary list to reflect changes
+        this.renderDictionaryList(p.dictionary || []);
     }
 
     async handleCategoryDelete(index) {
@@ -1016,7 +991,7 @@ class NovelApp {
             return alert('해당 카테고리를 사용하는 고유어가 있어 삭제할 수 없습니다.');
         }
         
-        if (!confirm(`'${categoryToDelete}' 카테고리를 삭제하시겠습니까?`)) return;
+        if (!confirm("'" + categoryToDelete + "' 카테고리를 삭제하시겠습니까?")) return;
 
         p.dictionaryCategories.splice(index, 1);
         await this.updateProjectInDB(p);
@@ -1037,10 +1012,10 @@ class NovelApp {
         const d = { command: "WRITE_CHAPTER", instruction: "아래의 [설정값]과 [지금까지의 줄거리]를 완벽히 분석하여, [현재 챕터 범위]에 해당하는 소설 본문을 즉시 작성하시오.", output: "JSON 분석이나 사족(인사말)을 붙이지 말고...", role: "웹소설 전문 작가...", task: "소설 텍스트 생성", directives: "속도감 있는 전개..." };
         const s = { ...d, ...JSON.parse(localStorage.getItem('global_novel_prompt_settings') || '{}') };
         Object.keys(this.dom.globalInputs).forEach(k => this.dom.globalInputs[k].value = s[k] || '');
-        UIHelper.openModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.add('hidden'); this.dom.panelCloseBtn?.classList.remove('hidden');
+        UIHelper.openModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.add('hidden');
     }
 
-    closeGlobalSettings() { UIHelper.closeModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.remove('hidden'); this.dom.panelCloseBtn?.classList.add('hidden'); }
+    closeGlobalSettings() { UIHelper.closeModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.remove('hidden');}
 
     saveGlobalSettings() { const ns = {}; Object.keys(this.dom.globalInputs).forEach(k => ns[k] = this.dom.globalInputs[k].value.trim()); localStorage.setItem('global_novel_prompt_settings', JSON.stringify(ns)); alert("저장됨"); this.closeGlobalSettings(); }
 
@@ -1059,7 +1034,7 @@ class NovelApp {
     async loadEditorSettings(pid) { const s = await StorageManager.get(StorageManager.STORE_SETTINGS, pid); this.currentSettings = s || { bgColor: '#ffffff', fontColor: '#212529', fontSize: '16', fontFamily: "'Noto Serif CJK KR', serif" }; this.applyEditorStyles(this.currentSettings); }
 
     applyEditorStyles(s) {
-        const r = document.documentElement; r.style.setProperty('--editor-bg-color', s.bgColor); r.style.setProperty('--editor-font-color', s.fontColor); r.style.setProperty('--editor-font-size', `${s.fontSize}px`); r.style.setProperty('--editor-font-family', s.fontFamily);
+        const r = document.documentElement; r.style.setProperty('--editor-bg-color', s.bgColor); r.style.setProperty('--editor-font-color', s.fontColor); r.style.setProperty('--editor-font-size', s.fontSize + 'px'); r.style.setProperty('--editor-font-family', s.fontFamily);
         this.dom.bgInput.value = s.bgColor; this.dom.fontInput.value = s.fontColor; this.dom.sizeRange.value = s.fontSize; this.dom.sizeNumber.value = s.fontSize; this.dom.familySelect.value = s.fontFamily;
     }
 
@@ -1067,12 +1042,13 @@ class NovelApp {
 
     handleFontSizeNumberChange() { let v = parseInt(this.dom.sizeNumber.value); v = Math.max(12, Math.min(100, v || 16)); this.updateEditorPreview('fontSize', v.toString()); }
 
-    openEditorSettings() { this.dom.settingsPanel.classList.add('open'); this.dom.overlay.classList.add('visible'); this.dom.themeToggle.classList.add('hidden'); this.dom.panelCloseBtn?.classList.remove('hidden'); }
+    openEditorSettings() { this.dom.settingsPanel.classList.add('open'); this.dom.overlay.classList.add('visible'); this.dom.themeToggle.classList.add('hidden');}
 
     closeEditorSettings() {
         this.dom.settingsPanel.classList.remove('open');
         if (this.dom.charDetailPanel.classList.contains('hidden') && this.dom.progDetailPanel.classList.contains('hidden') && this.dom.dictDetailPanel.classList.contains('hidden') && !this.dom.globalModal.classList.contains('visible')) {
-            this.dom.overlay.classList.remove('visible'); this.dom.themeToggle.classList.remove('hidden'); this.dom.panelCloseBtn?.classList.add('hidden');
+            this.dom.overlay.classList.remove('visible');
+            this.dom.themeToggle.classList.remove('hidden');
         }
     }
 }
