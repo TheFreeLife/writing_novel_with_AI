@@ -205,6 +205,7 @@ export function renderRelationshipMap(containerId, characters = [], relationship
         const labelY = (sourceChar.y + targetChar.y) / 2;
 
         const labelG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        labelG.style.cursor = 'pointer';
         g.appendChild(labelG);
 
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -215,16 +216,35 @@ export function renderRelationshipMap(containerId, characters = [], relationship
         text.setAttribute('dy', '0.3em');
         text.classList.add('relationship-label');
 
-        // Background for text
-        // Note: Exact text width calculation is hard in SVG without rendering, estimating
+        // Style text directly (Clean style: Halo + Color)
+        text.style.paintOrder = 'stroke';
+        text.style.stroke = 'var(--bg-color)';
+        text.style.strokeWidth = '4px';
+        text.style.strokeLinecap = 'round';
+        text.style.strokeLinejoin = 'round';
+        text.style.fontSize = '0.9em';
+        text.style.fill = 'var(--text-secondary)';
+        text.style.transition = 'font-weight 0.1s, fill 0.1s';
+
+        // Background for text (Invisible Hit Area)
         const textLen = (rel.label || '관계').length * 12;
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', labelX - textLen / 2 - 5);
-        rect.setAttribute('y', labelY - 10);
-        rect.setAttribute('width', textLen + 10);
-        rect.setAttribute('height', 20);
-        rect.setAttribute('rx', 4);
-        rect.classList.add('relationship-label-bg');
+        rect.setAttribute('x', labelX - textLen / 2 - 10); // Slightly larger hit area
+        rect.setAttribute('y', labelY - 15);
+        rect.setAttribute('width', textLen + 20);
+        rect.setAttribute('height', 30);
+        rect.setAttribute('fill', 'transparent'); // Invisible
+
+        // Hover Effect
+        labelG.addEventListener('mouseenter', () => {
+            text.style.fontWeight = 'bold';
+            text.style.fill = 'var(--primary-color)';
+        });
+
+        labelG.addEventListener('mouseleave', () => {
+            text.style.fontWeight = 'normal';
+            text.style.fill = 'var(--text-secondary)';
+        });
 
         labelG.appendChild(rect);
         labelG.appendChild(text);
