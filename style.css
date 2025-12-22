@@ -1505,8 +1505,9 @@ body {
 .node .node-label {
     fill: var(--text-color);
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 400;
     pointer-events: none;
+    transition: font-weight 0.2s ease;
     /* 텍스트가 이벤트를 가로채지 않도록 설정 */
 }
 
@@ -1525,6 +1526,10 @@ body {
     box-shadow: var(--shadow-lg);
 }
 
+.node:hover .node-label {
+    font-weight: 700;
+}
+
 .relationship-line {
     stroke: var(--border-color);
     stroke-width: 2px;
@@ -1537,7 +1542,7 @@ body {
 .relationship-label {
     fill: var(--text-secondary);
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 400;
 }
 
 .arrow-path {
