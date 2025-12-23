@@ -1,4 +1,4 @@
-export function renderRelationshipMap(containerId, characters = [], relationships = [], onSave) {
+export function renderRelationshipMap(containerId, characters = [], relationships = [], onSave, onEditRelationship) {
     const container = document.getElementById(containerId);
     if (!container) {
         console.error('Container with id ' + containerId + ' not found.');
@@ -144,25 +144,29 @@ export function renderRelationshipMap(containerId, characters = [], relationship
             editBtn.textContent = '수정';
             editBtn.onclick = () => {
                 removeContextMenu();
-                const newLabel = prompt("새로운 관계 명칭:", rel.label);
-                if (newLabel !== null) {
-                    rel.label = newLabel || '관계';
+                if (onEditRelationship) {
+                    onEditRelationship(rel, false);
+                } else {
+                    const newLabel = prompt("새로운 관계 명칭:", rel.label);
+                    if (newLabel !== null) {
+                        rel.label = newLabel || '관계';
 
-                    // DOM 업데이트
-                    if (rel._element) {
-                        rel._element.text.textContent = rel.label;
-                        const textLen = rel.label.length * 12; // Approximation
-                        const lx = parseFloat(rel._element.text.getAttribute('x'));
-                        rel._element.rect.setAttribute('x', lx - textLen / 2 - 5);
-                        rel._element.rect.setAttribute('width', textLen + 10);
-                    }
+                        // DOM 업데이트
+                        if (rel._element) {
+                            rel._element.text.textContent = rel.label;
+                            const textLen = rel.label.length * 12; // Approximation
+                            const lx = parseFloat(rel._element.text.getAttribute('x'));
+                            rel._element.rect.setAttribute('x', lx - textLen / 2 - 5);
+                            rel._element.rect.setAttribute('width', textLen + 10);
+                        }
 
-                    if (onSave) {
-                        const sanitizedRels = relationships.map(r => {
-                            const { _element, ...rest } = r;
-                            return rest;
-                        });
-                        onSave(characters, sanitizedRels);
+                        if (onSave) {
+                            const sanitizedRels = relationships.map(r => {
+                                const { _element, ...rest } = r;
+                                return rest;
+                            });
+                            onSave(characters, sanitizedRels);
+                        }
                     }
                 }
             };
@@ -415,22 +419,32 @@ export function renderRelationshipMap(containerId, characters = [], relationship
                     );
 
                     if (!exists) {
-                        const label = prompt("관계 명칭을 입력하세요:", "관계");
-                        if (label) {
+                        if (onEditRelationship) {
                             const newRel = {
                                 id: Date.now().toString(),
                                 source: relSourceNodeId,
                                 target: targetId,
-                                label: label
+                                label: '관계'
                             };
-                            relationships.push(newRel);
-                            drawLine(newRel);
-                            if (onSave) {
-                                const sanitizedRels = relationships.map(r => {
-                                    const { _element, ...rest } = r;
-                                    return rest;
-                                });
-                                onSave(characters, sanitizedRels);
+                            onEditRelationship(newRel, true);
+                        } else {
+                            const label = prompt("관계 명칭을 입력하세요:", "관계");
+                            if (label) {
+                                const newRel = {
+                                    id: Date.now().toString(),
+                                    source: relSourceNodeId,
+                                    target: targetId,
+                                    label: label
+                                };
+                                relationships.push(newRel);
+                                drawLine(newRel);
+                                if (onSave) {
+                                    const sanitizedRels = relationships.map(r => {
+                                        const { _element, ...rest } = r;
+                                        return rest;
+                                    });
+                                    onSave(characters, sanitizedRels);
+                                }
                             }
                         }
                     } else {

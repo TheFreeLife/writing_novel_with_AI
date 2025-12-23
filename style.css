@@ -67,7 +67,8 @@ body {
 #panel-close-btn,
 #prog-panel-close-btn,
 #foreshadowing-panel-close-btn,
-#dict-panel-close-btn {
+#dict-panel-close-btn,
+#rel-panel-close-btn {
     background: none;
     border: 1px solid var(--border-color);
     width: 36px;
@@ -91,7 +92,8 @@ body {
 #panel-close-btn:hover,
 #prog-panel-close-btn:hover,
 #foreshadowing-panel-close-btn:hover,
-#dict-panel-close-btn:hover {
+#dict-panel-close-btn:hover,
+#rel-panel-close-btn:hover {
     background-color: var(--secondary-color);
     color: #ef4444;
     border-color: #ef4444;
@@ -1168,7 +1170,8 @@ body {
 #panel-expand-btn,
 #prog-panel-expand-btn,
 #foreshadowing-panel-expand-btn,
-#dict-panel-expand-btn {
+#dict-panel-expand-btn,
+#rel-panel-expand-btn {
     background: none;
     border: 1px solid var(--border-color);
     width: 36px;
@@ -1185,7 +1188,8 @@ body {
 #panel-expand-btn:hover,
 #prog-panel-expand-btn:hover,
 #foreshadowing-panel-expand-btn:hover,
-#dict-panel-expand-btn:hover {
+#dict-panel-expand-btn:hover,
+#rel-panel-expand-btn:hover {
     background-color: var(--secondary-color);
     color: var(--primary-color);
     border-color: var(--primary-color);

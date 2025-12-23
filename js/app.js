@@ -21,6 +21,8 @@ class NovelApp {
         this.currentProgressionId = null;
         this.currentForeshadowingId = null;
         this.currentDictionaryId = null;
+        this.currentRelationship = null;
+        this.isNewRelationship = false;
         this.editingProjectId = null;
         this.currentEditingEventIdx = null;
         this.currentEditingCategoryIndex = null;
@@ -168,6 +170,21 @@ class NovelApp {
                 description: document.getElementById('dict-description'),
             },
 
+            relDetailPanel: document.getElementById('relationship-detail-panel'),
+            saveRelBtn: document.getElementById('save-relationship-btn'),
+            deleteRelBtn: document.getElementById('delete-relationship-btn'),
+            relExpandBtn: document.getElementById('rel-panel-expand-btn'),
+            relExpandIcon: document.getElementById('rel-expand-icon'),
+            relShrinkIcon: document.getElementById('rel-shrink-icon'),
+            relCloseBtn: document.getElementById('rel-panel-close-btn'),
+            relCharactersDisplay: document.getElementById('rel-characters-display'),
+            relInputs: {
+                label: document.getElementById('rel-label'),
+                feelings: document.getElementById('rel-feelings'),
+                past: document.getElementById('rel-past'),
+                speech: document.getElementById('rel-speech'),
+            },
+
             editDictCategoryBtn: document.getElementById('edit-dict-category-btn'),
             dictCategoryModal: document.getElementById('dict-category-modal'),
             closeDictCategoryModalBtn: document.getElementById('close-dict-category-modal-btn'),
@@ -214,7 +231,7 @@ class NovelApp {
         this.dom.overlay.addEventListener('click', () => this.closeAllOverlappingUIs());
 
         const closeAll = () => this.closeAllOverlappingUIs();
-        [this.dom.panelCloseBtn, this.dom.progCloseBtn, this.dom.foreshadowingCloseBtn, this.dom.dictCloseBtn, this.dom.settingsCloseBtnInner].forEach(btn => btn?.addEventListener('click', closeAll));
+        [this.dom.panelCloseBtn, this.dom.progCloseBtn, this.dom.foreshadowingCloseBtn, this.dom.dictCloseBtn, this.dom.relCloseBtn, this.dom.settingsCloseBtnInner].forEach(btn => btn?.addEventListener('click', closeAll));
 
         document.addEventListener('click', () => {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('visible'));
@@ -262,6 +279,10 @@ class NovelApp {
         this.dom.saveDictBtn.addEventListener('click', () => this.saveDictionary());
         this.dom.deleteDictBtn.addEventListener('click', () => this.deleteDictionary());
         this.dom.dictExpandBtn.addEventListener('click', () => this.togglePanelExpand('dictDetailPanel', 'dictExpandIcon', 'dictShrinkIcon'));
+
+        this.dom.saveRelBtn.addEventListener('click', () => this.saveRelationship());
+        this.dom.deleteRelBtn.addEventListener('click', () => this.deleteRelationship());
+        this.dom.relExpandBtn.addEventListener('click', () => this.togglePanelExpand('relDetailPanel', 'relExpandIcon', 'relShrinkIcon'));
 
         this.dom.editDictCategoryBtn.addEventListener('click', () => this.openCategoryModal());
         this.dom.closeDictCategoryModalBtn.addEventListener('click', () => this.closeCategoryModal());
@@ -331,7 +352,8 @@ class NovelApp {
                         p.characters = newChars;
                         p.relationships = newRels;
                         await this.updateProjectInDB(p);
-                    }
+                    },
+                    (rel, isNew) => this.openRelationshipPanel(rel, isNew)
                 );
             }
         }
@@ -345,6 +367,7 @@ class NovelApp {
         this.closeProgressionPanel();
         this.closeForeshadowingPanel();
         this.closeDictionaryPanel();
+        this.closeRelationshipPanel();
         this.closePastEventModal();
         this.closeCategoryModal();
         this.closeBackgroundEventModal();
@@ -913,6 +936,85 @@ class NovelApp {
 
     async deleteDictionary() { if (confirm("삭제?")) { const p = this.projects.find(x => x.id === this.currentProjectId); p.dictionary = p.dictionary.filter(x => x.id !== this.currentDictionaryId); await this.updateProjectInDB(p); this.closeDictionaryPanel(); } }
 
+    openRelationshipPanel(rel, isNew = false) {
+        this.currentRelationship = { ...rel };
+        this.isNewRelationship = isNew;
+
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        const sourceChar = p.characters.find(c => c.id === rel.source);
+        const targetChar = p.characters.find(c => c.id === rel.target);
+
+        this.dom.relCharactersDisplay.textContent = (sourceChar?.name || '알 수 없음') + ' ↔ ' + (targetChar?.name || '알 수 없음');
+
+        Object.keys(this.dom.relInputs).forEach(k => {
+            this.dom.relInputs[k].value = rel[k] || '';
+        });
+
+        this.dom.relDetailPanel.classList.remove('hidden');
+        this.dom.relDetailPanel.querySelector('.form-container').scrollTop = 0;
+        this.dom.themeToggle.classList.add('hidden');
+        this.dom.relCloseBtn?.classList.remove('hidden');
+        this.dom.overlay.classList.add('visible');
+        this.dom.deleteRelBtn.style.display = isNew ? 'none' : 'block';
+    }
+
+    closeRelationshipPanel() {
+        this.dom.relDetailPanel.classList.add('hidden');
+        this.dom.relDetailPanel.classList.remove('expanded');
+        this.dom.relExpandIcon?.classList.remove('hidden');
+        this.dom.relShrinkIcon?.classList.add('hidden');
+        this.currentRelationship = null;
+        if (this.dom.settingsPanel.classList.contains('hidden') || !this.dom.settingsPanel.classList.contains('open')) {
+            if (!this.dom.globalModal.classList.contains('visible') && this.dom.charDetailPanel.classList.contains('hidden') && this.dom.progDetailPanel.classList.contains('hidden') && this.dom.dictDetailPanel.classList.contains('hidden')) {
+                this.dom.overlay.classList.remove('visible');
+                this.dom.themeToggle.classList.remove('hidden');
+                this.dom.relCloseBtn?.classList.add('hidden');
+            }
+        }
+    }
+
+    async saveRelationship() {
+        const label = this.dom.relInputs.label.value.trim();
+        if (!label) return alert("관계 명칭은 필수입니다.");
+
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (!p.relationships) p.relationships = [];
+
+        // DOM 요소(_element)가 포함되어 있을 수 있으므로 이를 제외하고 순수 데이터만 추출합니다.
+        const { _element, ...pureData } = this.currentRelationship;
+        const data = { ...pureData };
+        
+        Object.keys(this.dom.relInputs).forEach(k => {
+            data[k] = this.dom.relInputs[k].value.trim();
+        });
+
+        if (this.isNewRelationship) {
+            p.relationships.push(data);
+        } else {
+            const idx = p.relationships.findIndex(r => r.id === data.id);
+            if (idx !== -1) {
+                p.relationships[idx] = data;
+            }
+        }
+
+        await this.updateProjectInDB(p);
+        this.closeRelationshipPanel();
+
+        // 관계도 다시 그리기
+        this.switchTab(document.querySelector('.tab-btn[data-tab="tab-relations"]'));
+        alert("저장되었습니다.");
+    }
+
+    async deleteRelationship() {
+        if (confirm("이 관계를 삭제하시겠습니까?")) {
+            const p = this.projects.find(x => x.id === this.currentProjectId);
+            p.relationships = p.relationships.filter(r => r.id !== this.currentRelationship.id);
+            await this.updateProjectInDB(p);
+            this.closeRelationshipPanel();
+            this.switchTab(document.querySelector('.tab-btn[data-tab="tab-relations"]'));
+        }
+    }
+
     openCategoryModal() {
         this.currentEditingCategoryIndex = null;
         this.dom.dictCategoryInput.value = '';
@@ -1058,13 +1160,22 @@ class NovelApp {
 
     closeEditorSettings() {
         this.dom.settingsPanel.classList.remove('open');
-        if (this.dom.charDetailPanel.classList.contains('hidden') && this.dom.progDetailPanel.classList.contains('hidden') && this.dom.dictDetailPanel.classList.contains('hidden') && !this.dom.globalModal.classList.contains('visible')) {
+        if (this.dom.charDetailPanel.classList.contains('hidden') && this.dom.progDetailPanel.classList.contains('hidden') && this.dom.dictDetailPanel.classList.contains('hidden') && this.dom.relDetailPanel.classList.contains('hidden') && !this.dom.globalModal.classList.contains('visible')) {
             this.dom.overlay.classList.remove('visible');
             this.dom.themeToggle.classList.remove('hidden');
         }
     }
     async updateProjectInDB(project) {
         if (!project) return;
+
+        // IndexedDB는 DOM 요소를 저장할 수 없으므로, 관계 데이터에서 _element 속성을 제거(정화)합니다.
+        if (project.relationships && Array.isArray(project.relationships)) {
+            project.relationships = project.relationships.map(rel => {
+                const { _element, ...rest } = rel;
+                return rest;
+            });
+        }
+
         const index = this.projects.findIndex(p => p.id === project.id);
         if (index !== -1) {
             this.projects[index] = project;

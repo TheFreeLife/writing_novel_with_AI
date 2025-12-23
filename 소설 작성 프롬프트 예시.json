@@ -69,13 +69,13 @@
   "character_relationships": [
     {
       "pair": [
-        "강진혁",
-        "이소라"
+        "관계 정보/대상 인물 1",
+        "관계 정보/대상 인물 2"
       ],
-      "defined_link": "임시 파티원",
-      "psychological_dynamic": "소라는 진혁을 무서워하면서도 의지함. 진혁은 소라를 '쓸만한 미끼' 정도로 생각함.",
-      "shared_history": "진혁이 소라가 흘린 짐을 주워준 적이 있음 (소라는 이를 구원이라 착각 중).",
-      "interaction_tone": "진혁은 단답형, 소라는 존댓말."
+      "defined_link": "관계 정보/관계 명칭 (필수)",
+      "psychological_dynamic": "관계 정보/서로에 대한 감정",
+      "shared_history": "관계 정보/공유하는 과거",
+      "interaction_tone": "관계 정보/대화할 때 말투"
     }
   ],
   "proper_nouns_dict": {
