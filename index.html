@@ -156,7 +156,13 @@
                     </div>
                 </div>
                 <div id="tab-relations" class="tab-pane">
-                    <div id="relationship-map-container" style="width: 100%; height: 600px;">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                        <button id="rel-map-expand-btn" class="secondary-btn" style="width: auto; padding: 8px 16px; display: flex; align-items: center; gap: 8px; border-radius: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                            확대 보기
+                        </button>
+                    </div>
+                    <div id="relationship-map-container" style="width: 100%; height: 600px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--card-bg);">
                         <!-- 관계도 SVG가 여기에 렌더링됩니다. -->
                     </div>
                 </div>
@@ -707,6 +713,20 @@
 
     <!-- 오버레이 -->
     <div id="overlay"></div>
+
+    <!-- 관계도 전체 화면 오버레이 -->
+    <div id="rel-map-fullscreen-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column;">
+        <div style="padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); border-bottom: 1px solid var(--border-color); box-shadow: var(--shadow);">
+            <h3 style="margin: 0; color: var(--primary-color);">관계도 전체 화면</h3>
+            <button id="rel-map-shrink-btn" class="secondary-btn" style="width: auto; padding: 8px 16px; display: flex; align-items: center; gap: 8px; border-radius: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+                축소하기
+            </button>
+        </div>
+        <div id="relationship-map-fullscreen-container" style="flex-grow: 1; width: 100%; height: 100%;">
+            <!-- 여기에 관계도가 다시 그려집니다 -->
+        </div>
+    </div>
 
     <!-- 전역 지시 프롬프트 설정 모달 -->
     <div id="global-settings-modal" class="modal">

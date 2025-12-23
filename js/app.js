@@ -214,11 +214,17 @@ class NovelApp {
             sizeNumber: document.getElementById('setting-font-size-number'),
             bgInput: document.getElementById('setting-bg-color'),
             fontInput: document.getElementById('setting-font-color'),
-            familySelect: document.getElementById('setting-font-family')
+            familySelect: document.getElementById('setting-font-family'),
+            relMapExpandBtn: document.getElementById('rel-map-expand-btn'),
+            relMapShrinkBtn: document.getElementById('rel-map-shrink-btn'),
+            relMapFullscreenOverlay: document.getElementById('rel-map-fullscreen-overlay'),
+            relMapFullscreenContainer: document.getElementById('relationship-map-fullscreen-container')
         };
     }
 
     bindEvents() {
+        this.dom.relMapExpandBtn.addEventListener('click', () => this.toggleRelMapFullscreen(true));
+        this.dom.relMapShrinkBtn.addEventListener('click', () => this.toggleRelMapFullscreen(false));
         this.dom.themeToggle.addEventListener('click', () => this.toggleTheme());
         this.dom.backToMenu.addEventListener('click', () => {
             this.currentProjectId = null;
@@ -342,20 +348,37 @@ class NovelApp {
         document.getElementById(tabId).classList.add('active');
 
         if (tabId === 'tab-relations') {
-            const p = this.projects.find(x => x.id === this.currentProjectId);
-            if (p) {
-                renderRelationshipMap(
-                    'relationship-map-container',
-                    p.characters || [],
-                    p.relationships || [],
-                    async (newChars, newRels) => {
-                        p.characters = newChars;
-                        p.relationships = newRels;
-                        await this.updateProjectInDB(p);
-                    },
-                    (rel, isNew) => this.openRelationshipPanel(rel, isNew)
-                );
-            }
+            this.renderCurrentRelationshipMap();
+        }
+    }
+
+    renderCurrentRelationshipMap(containerId = 'relationship-map-container') {
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (!p) return;
+
+        renderRelationshipMap(
+            containerId,
+            p.characters || [],
+            p.relationships || [],
+            async (newChars, newRels) => {
+                p.characters = newChars;
+                p.relationships = newRels;
+                await this.updateProjectInDB(p);
+            },
+            (rel, isNew) => this.openRelationshipPanel(rel, isNew)
+        );
+    }
+
+    toggleRelMapFullscreen(isFullscreen) {
+        if (isFullscreen) {
+            this.dom.relMapFullscreenOverlay.classList.remove('hidden');
+            // 오버레이가 보이고 나서 크기가 계산되도록 약간의 지연 시간을 둡니다.
+            setTimeout(() => {
+                this.renderCurrentRelationshipMap('relationship-map-fullscreen-container');
+            }, 100);
+        } else {
+            this.dom.relMapFullscreenOverlay.classList.add('hidden');
+            this.renderCurrentRelationshipMap('relationship-map-container');
         }
     }
 
@@ -1000,8 +1023,9 @@ class NovelApp {
         await this.updateProjectInDB(p);
         this.closeRelationshipPanel();
 
-        // 관계도 다시 그리기
-        this.switchTab(document.querySelector('.tab-btn[data-tab="tab-relations"]'));
+        // 현재 전체 화면 모드인지 확인하여 적절한 컨테이너에 다시 렌더링
+        const isFullscreen = !this.dom.relMapFullscreenOverlay.classList.contains('hidden');
+        this.renderCurrentRelationshipMap(isFullscreen ? 'relationship-map-fullscreen-container' : 'relationship-map-container');
         alert("저장되었습니다.");
     }
 
@@ -1009,12 +1033,14 @@ class NovelApp {
         if (confirm("이 관계를 삭제하시겠습니까?")) {
             const p = this.projects.find(x => x.id === this.currentProjectId);
             p.relationships = p.relationships.filter(r => r.id !== this.currentRelationship.id);
-            await this.updateProjectInDB(p);
-            this.closeRelationshipPanel();
-            this.switchTab(document.querySelector('.tab-btn[data-tab="tab-relations"]'));
-        }
-    }
-
+                    await this.updateProjectInDB(p);
+                    this.closeRelationshipPanel();
+                    
+                    // 현재 전체 화면 모드인지 확인하여 적절한 컨테이너에 다시 렌더링
+                    const isFullscreen = !this.dom.relMapFullscreenOverlay.classList.contains('hidden');
+                    this.renderCurrentRelationshipMap(isFullscreen ? 'relationship-map-fullscreen-container' : 'relationship-map-container');
+                }
+            }
     openCategoryModal() {
         this.currentEditingCategoryIndex = null;
         this.dom.dictCategoryInput.value = '';

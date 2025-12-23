@@ -103,6 +103,16 @@ body {
     display: none !important;
 }
 
+/* 관계도 전체 화면 레이아웃 */
+#rel-map-fullscreen-overlay {
+    background-color: var(--bg-color);
+    overflow: hidden;
+}
+
+#relationship-map-fullscreen-container {
+    background-color: var(--card-bg);
+}
+
 /* --- 프로젝트 뷰들 공통 --- */
 .view {
     height: 100vh;
@@ -213,11 +223,12 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     box-shadow: var(--shadow-lg);
-    z-index: 100;
-    min-width: 120px;
     display: none;
+    z-index: 10000;
+    min-width: 120px;
+    padding: 8px 0;
+    margin-top: 8px;
     overflow: hidden;
-    margin-top: 5px;
 }
 
 .dropdown-menu.visible {
@@ -854,8 +865,8 @@ body {
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
-    /* 사이드바(1500)보다 높게 설정 */
+    z-index: 10200;
+    /* 전체 화면 오버레이보다 높게 설정 */
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
 }
@@ -1025,7 +1036,7 @@ body {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
-    z-index: 1000;
+    z-index: 10050;
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.3s ease-in-out, visibility 0.3s;
@@ -1143,7 +1154,7 @@ body {
     background-color: var(--card-bg);
     border-left: 1px solid var(--border-color);
     padding: 60px 40px;
-    z-index: 1500;
+    z-index: 10100;
     /* 전체 화면 최상단 */
     box-shadow: -15px 0 40px rgba(0, 0, 0, 0.15);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);

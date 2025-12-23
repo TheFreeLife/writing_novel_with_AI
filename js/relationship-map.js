@@ -137,7 +137,7 @@ export function renderRelationshipMap(containerId, characters = [], relationship
             menu.style.position = 'fixed';
             menu.style.left = e.clientX + 'px';
             menu.style.top = e.clientY + 'px';
-            menu.style.zIndex = '3000';
+            menu.style.zIndex = '10000';
 
             const editBtn = document.createElement('button');
             editBtn.className = 'dropdown-item';
