@@ -220,6 +220,7 @@ class NovelApp {
             writingForeshadowing: document.getElementById('writing-foreshadowing'),
             saveWritingBtn: document.getElementById('save-writing-btn'),
             resetWritingBtn: document.getElementById('reset-writing-btn'),
+            exportPromptBtn: document.getElementById('export-prompt-btn'),
 
             settingsPanel: document.getElementById('settings-panel'),
             settingsOpenBtn: document.getElementById('settings-open-btn'),
@@ -323,19 +324,23 @@ class NovelApp {
 
         
 
-                        this.dom.saveWritingBtn.addEventListener('click', () => this.saveWritingSettings());
+                                this.dom.saveWritingBtn.addEventListener('click', () => this.saveWritingSettings());
 
         
 
-                        this.dom.resetWritingBtn.addEventListener('click', () => this.resetWritingSettings());
+                                this.dom.resetWritingBtn.addEventListener('click', () => this.resetWritingSettings());
 
         
 
-                
+                                this.dom.exportPromptBtn.addEventListener('click', () => this.handleExportPrompt());
 
         
 
-                        this.dom.openGlobalBtn.addEventListener('click', () => this.openGlobalSettings());
+                        
+
+        
+
+                                this.dom.openGlobalBtn.addEventListener('click', () => this.openGlobalSettings());
         this.dom.saveGlobalBtn.addEventListener('click', () => this.saveGlobalSettings());
         this.dom.cancelGlobalBtn.addEventListener('click', () => this.closeGlobalSettings());
         this.dom.resetGlobalBtn.addEventListener('click', () => this.resetGlobalSettings());
@@ -1438,6 +1443,173 @@ class NovelApp {
             alert('데이터 복구 중 오류가 발생했습니다.');
         } finally {
             this.dom.importFileInput.value = '';
+        }
+    }
+
+    async handleExportPrompt() {
+        try {
+            const p = this.projects.find(x => x.id === this.currentProjectId);
+            if (!p) return;
+
+            // 전역 지시 프롬프트 설정 가져오기
+            const globalSettings = await StorageManager.get(StorageManager.STORE_PROMPTS, 'global_settings') || {};
+            
+            // 데이터 매핑 시작
+            const exportData = {
+                request: {
+                    command: globalSettings.command || "",
+                    instruction: globalSettings.instruction || "",
+                    output_requirements: globalSettings.output || ""
+                },
+                project_meta: {
+                    role: globalSettings.role || "",
+                    task: globalSettings.task || "",
+                    model_instruction: globalSettings.directives || ""
+                },
+                core_experience_goal: {
+                    primary_emotion: p.novelSettings?.emotion || "",
+                    target_gratification: p.novelSettings?.gratification || "",
+                    narrative_focus: p.novelSettings?.focus || ""
+                },
+                world_settings: {
+                    title: p.name || "",
+                    genre: p.description || "",
+                    background_lore: p.backgroundSettings?.world || ""
+                },
+                characters: (p.characters || []).map(c => ({
+                    name: c.name || "",
+                    role: c.role || "",
+                    gender: c.gender || "",
+                    race: c.race || "",
+                    origin: c.origin || "",
+                    speech_style: {
+                        tone: c.speechTone || "",
+                        examples: c.speechExamples || []
+                    },
+                    behavior_patterns: {
+                        common_habits: Array.isArray(c.behaviorHabits) ? c.behaviorHabits : [c.behaviorHabits || ""],
+                        reaction_to_crisis: c.behaviorReactions || "",
+                        in_combat: c.behaviorCombat || ""
+                    },
+                    features: c.features || "",
+                    special_ability: c.abilities || "",
+                    appearance: c.appearance || "",
+                    personality: {
+                        external: c.personalityExt || "",
+                        internal: c.personalityInt || ""
+                    },
+                    preferences: {
+                        likes: c.likes || [],
+                        dislikes: c.dislikes || []
+                    },
+                    past_background: (c.pastEvents && c.pastEvents.length > 0) ? {
+                        summary: c.pastEvents[0].summary || "",
+                        critical_event: c.pastEvents[0].detail || "",
+                        impact_on_current: c.pastEvents[0].impact || ""
+                    } : {
+                        summary: "",
+                        critical_event: "",
+                        impact_on_current: ""
+                    },
+                    motivation: c.motivation || ""
+                })),
+                character_relationships: (p.relationships || []).map(r => {
+                    const sourceChar = p.characters.find(c => c.id === r.source);
+                    const targetChar = p.characters.find(c => c.id === r.target);
+                    return {
+                        pair: [sourceChar?.name || "알 수 없음", targetChar?.name || "알 수 없음"],
+                        defined_link: r.label || "",
+                        psychological_dynamic: r.feelings || "",
+                        shared_history: r.past || "",
+                        interaction_tone: r.speech || ""
+                    };
+                }),
+                proper_nouns_dict: {},
+                foreshadowing_registry: {
+                    active_hooks: (p.foreshadowing || []).map(f => ({
+                        id: f.name || "",
+                        hidden_truth: f.hiddenFact || "",
+                        observable_clue: f.clue || "",
+                        reveal_stage: f.revealTiming || ""
+                    }))
+                },
+                major_events_log: (p.backgroundSettings?.events || []).map(e => ({
+                    timing: e.time || "",
+                    event_name: e.name || "",
+                    description: e.detail || "",
+                    narrative_impact: e.impact || ""
+                })),
+                story_progression_log: {
+                    episode_history: (p.progression || []).map((prog, idx) => ({
+                        episode_no: idx + 1,
+                        summary: prog.summary || "",
+                        key_changes: prog.points || ""
+                    }))
+                },
+                current_chapter_scope: {
+                    episode_notation: p.writingSettings?.episode || "",
+                    scence_goal: p.writingSettings?.goal || "",
+                    must_include_events: [p.writingSettings?.progression || ""],
+                    hooks_to_drop: [p.writingSettings?.foreshadowing || ""]
+                },
+                writing_style_guide: {
+                    narrative_perspective: p.novelSettings?.pov || "",
+                    tone: p.novelSettings?.tone || "",
+                    formatting_rules: [p.novelSettings?.rules || ""]
+                }
+            };
+
+            // 고유어 사전 카테고리별 매핑
+            if (p.dictionary) {
+                p.dictionary.forEach(d => {
+                    const cat = d.category || "기타";
+                    if (!exportData.proper_nouns_dict[cat]) {
+                        exportData.proper_nouns_dict[cat] = [];
+                    }
+                    exportData.proper_nouns_dict[cat].push({
+                        term: d.name || "",
+                        desc: d.description || ""
+                    });
+                });
+            }
+
+            const fileName = `novel_prompt_${p.name}_${new Date().toISOString().split('T')[0]}.json`;
+            const content = JSON.stringify(exportData, null, 2);
+
+            // '다른 이름으로 저장' 대화상자 시도
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: fileName,
+                        types: [{
+                            description: 'Novel Prompt JSON File',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(content);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    console.warn('File System API 사용 불가, 일반 다운로드로 전환합니다.', err);
+                }
+            }
+
+            // 폴백: 일반 다운로드 방식
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('프롬프트 내보내기 실패:', error);
+            alert('프롬프트 내보내기 중 오류가 발생했습니다.');
         }
     }
 
