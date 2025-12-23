@@ -23,6 +23,9 @@ class NovelApp {
         this.currentDictionaryId = null;
         this.currentRelationship = null;
         this.isNewRelationship = false;
+        this.relMapInstance = null;
+        this.currentSearchIndex = -1;
+        this.currentFSSearchIndex = -1;
         this.editingProjectId = null;
         this.currentEditingEventIdx = null;
         this.currentEditingCategoryIndex = null;
@@ -218,13 +221,25 @@ class NovelApp {
             relMapExpandBtn: document.getElementById('rel-map-expand-btn'),
             relMapShrinkBtn: document.getElementById('rel-map-shrink-btn'),
             relMapFullscreenOverlay: document.getElementById('rel-map-fullscreen-overlay'),
-            relMapFullscreenContainer: document.getElementById('relationship-map-fullscreen-container')
+            relMapFullscreenContainer: document.getElementById('relationship-map-fullscreen-container'),
+            relMapSearchInput: document.getElementById('rel-map-search-input'),
+            relMapSearchResults: document.getElementById('rel-map-search-results'),
+            relMapFSSearchInput: document.getElementById('rel-map-fs-search-input'),
+            relMapFSSearchResults: document.getElementById('rel-map-fs-search-results')
         };
     }
 
     bindEvents() {
         this.dom.relMapExpandBtn.addEventListener('click', () => this.toggleRelMapFullscreen(true));
         this.dom.relMapShrinkBtn.addEventListener('click', () => this.toggleRelMapFullscreen(false));
+        this.dom.relMapSearchInput.addEventListener('input', () => this.handleRelMapSearch(false));
+        this.dom.relMapSearchInput.addEventListener('focus', () => this.handleRelMapSearch(false));
+        this.dom.relMapSearchInput.addEventListener('keydown', (e) => this.handleRelMapKeyboard(e, false));
+        
+        this.dom.relMapFSSearchInput.addEventListener('input', () => this.handleRelMapSearch(true));
+        this.dom.relMapFSSearchInput.addEventListener('focus', () => this.handleRelMapSearch(true));
+        this.dom.relMapFSSearchInput.addEventListener('keydown', (e) => this.handleRelMapKeyboard(e, true));
+        
         this.dom.themeToggle.addEventListener('click', () => this.toggleTheme());
         this.dom.backToMenu.addEventListener('click', () => {
             this.currentProjectId = null;
@@ -356,7 +371,7 @@ class NovelApp {
         const p = this.projects.find(x => x.id === this.currentProjectId);
         if (!p) return;
 
-        renderRelationshipMap(
+        this.relMapInstance = renderRelationshipMap(
             containerId,
             p.characters || [],
             p.relationships || [],
@@ -382,7 +397,107 @@ class NovelApp {
         }
     }
 
+    handleRelMapSearch(isFullscreen = false) {
+        const input = isFullscreen ? this.dom.relMapFSSearchInput : this.dom.relMapSearchInput;
+        const resultsUl = isFullscreen ? this.dom.relMapFSSearchResults : this.dom.relMapSearchResults;
+        const query = input.value.trim().toLowerCase();
+        
+        // 검색 시 인덱스 초기화
+        if (isFullscreen) this.currentFSSearchIndex = -1;
+        else this.currentSearchIndex = -1;
+
+        if (!query) {
+            resultsUl.classList.remove('visible');
+            return;
+        }
+
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (!p || !p.characters) return;
+
+        const filtered = p.characters.filter(c => c.name.toLowerCase().includes(query));
+
+        if (filtered.length === 0) {
+            resultsUl.innerHTML = '<li class="dropdown-item" style="color:var(--text-secondary); text-align:center;">결과 없음</li>';
+        } else {
+            resultsUl.innerHTML = '';
+            filtered.forEach((c, index) => {
+                const li = document.createElement('li');
+                li.className = 'dropdown-item';
+                li.textContent = c.name;
+                li.dataset.id = c.id;
+                li.style.cursor = 'pointer';
+                li.onclick = (e) => {
+                    e.stopPropagation();
+                    this.selectSearchResult(c, isFullscreen);
+                };
+                resultsUl.appendChild(li);
+            });
+        }
+        resultsUl.classList.add('visible');
+    }
+
+    handleRelMapKeyboard(e, isFullscreen) {
+        const resultsUl = isFullscreen ? this.dom.relMapFSSearchResults : this.dom.relMapSearchResults;
+        const items = resultsUl.querySelectorAll('.dropdown-item:not([style*="text-align:center"])');
+        
+        if (!resultsUl.classList.contains('visible') || items.length === 0) return;
+
+        let currentIndex = isFullscreen ? this.currentFSSearchIndex : this.currentSearchIndex;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentIndex = (currentIndex + 1) % items.length;
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentIndex = (currentIndex - 1 + items.length) % items.length;
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (currentIndex >= 0) {
+                const selectedItem = items[currentIndex];
+                const charId = selectedItem.dataset.id;
+                const p = this.projects.find(x => x.id === this.currentProjectId);
+                const char = p.characters.find(c => c.id === charId);
+                if (char) this.selectSearchResult(char, isFullscreen);
+            }
+            return;
+        } else if (e.key === 'Escape') {
+            resultsUl.classList.remove('visible');
+            return;
+        } else {
+            return;
+        }
+
+        // 인덱스 업데이트 및 스타일 적용
+        if (isFullscreen) this.currentFSSearchIndex = currentIndex;
+        else this.currentSearchIndex = currentIndex;
+
+        items.forEach((item, idx) => {
+            if (idx === currentIndex) {
+                item.classList.add('active');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    selectSearchResult(char, isFullscreen) {
+        const input = isFullscreen ? this.dom.relMapFSSearchInput : this.dom.relMapSearchInput;
+        const resultsUl = isFullscreen ? this.dom.relMapFSSearchResults : this.dom.relMapSearchResults;
+
+        if (this.relMapInstance && this.relMapInstance.centerOnNode) {
+            this.relMapInstance.centerOnNode(char.id);
+        }
+        input.value = char.name;
+        resultsUl.classList.remove('visible');
+        if (isFullscreen) this.currentFSSearchIndex = -1;
+        else this.currentSearchIndex = -1;
+        input.blur(); // 선택 후 포커스 해제
+    }
+
     closeAllOverlappingUIs() {
+        this.dom.relMapSearchResults.classList.remove('visible');
+        this.dom.relMapFSSearchResults.classList.remove('visible');
         this.closeEditorSettings();
         this.closeProjectModal();
         this.closeGlobalSettings();

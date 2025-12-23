@@ -477,6 +477,31 @@ export function renderRelationshipMap(containerId, characters = [], relationship
         updateViewBox();
     });
 
+    // --- API for External Control ---
+    const centerOnNode = (nodeId) => {
+        const char = characters.find(c => c.id === nodeId);
+        if (!char) return;
+
+        // 원활한 이동을 위해 애니메이션 효과(CSS transition)를 viewBox에 직접 주기는 어려우므로
+        // 즉시 이동 후 업데이트합니다.
+        viewBox.x = char.x - viewBox.w / 2;
+        viewBox.y = char.y - viewBox.h / 2;
+        updateViewBox();
+
+        // 노드 강조 효과 (잠시 동안 노드 크기를 키움)
+        const nodeEl = nodeElements[nodeId];
+        if (nodeEl) {
+            const circle = nodeEl.querySelector('.node-circle');
+            circle.style.transition = 'r 0.3s ease, stroke-width 0.3s ease';
+            circle.setAttribute('r', '60');
+            circle.style.strokeWidth = '10px';
+            setTimeout(() => {
+                circle.setAttribute('r', '45');
+                circle.style.strokeWidth = '2px';
+            }, 1000);
+        }
+    };
+
     // Handle mouse leaving window while dragging
     svg.addEventListener('mouseleave', () => {
         isPanning = false;
@@ -486,4 +511,8 @@ export function renderRelationshipMap(containerId, characters = [], relationship
             if (tempLine) { tempLine.remove(); tempLine = null; }
         }
     });
+
+    return {
+        centerOnNode
+    };
 }

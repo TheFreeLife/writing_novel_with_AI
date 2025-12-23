@@ -113,6 +113,82 @@ body {
     background-color: var(--card-bg);
 }
 
+/* 관계도 검색 UI 대폭 개선 */
+#rel-map-search-container,
+#rel-map-fs-search-container {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#rel-map-search-input,
+#rel-map-fs-search-input {
+    height: 48px !important; /* 높이 증가 */
+    padding-left: 18px !important;
+    padding-right: 45px !important;
+    font-size: 1rem !important;
+    border-radius: 16px !important;
+    border: 2px solid var(--border-color) !important;
+    background-color: var(--card-bg) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.3s !important;
+}
+
+#rel-map-search-input:focus,
+#rel-map-fs-search-input:focus {
+    border-color: var(--primary-color) !important;
+    outline: none !important;
+    background-color: var(--card-bg) !important;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    transform: translateY(-1px);
+}
+
+/* 검색 아이콘 정렬 및 색상 */
+#rel-map-search-container svg,
+#rel-map-fs-search-container svg {
+    width: 20px !important;
+    height: 20px !important;
+    left: auto !important;
+    right: 15px !important;
+    color: var(--text-secondary);
+    transition: color 0.3s;
+}
+
+#rel-map-search-input:focus + svg,
+#rel-map-fs-search-input:focus + svg {
+    color: var(--primary-color);
+}
+
+/* 드롭다운 결과창 미화 */
+#rel-map-search-results,
+#rel-map-fs-search-results {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 18px !important;
+    box-shadow: var(--shadow-lg) !important;
+    padding: 10px !important;
+    margin-top: 12px !important;
+    background-color: var(--card-bg);
+    max-height: 350px !important;
+}
+
+.dropdown-item {
+    padding: 12px 18px !important;
+    border-radius: 12px !important;
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+    transition: all 0.2s !important;
+    border: 1px solid transparent;
+}
+
+.dropdown-item:hover, .dropdown-item.active {
+    background-color: var(--secondary-color) !important;
+    color: var(--primary-color) !important;
+    border-color: rgba(79, 70, 229, 0.1);
+    transform: translateX(5px);
+}
+
+.dropdown-item.active {
+    font-weight: 700;
+}
+
 /* --- 프로젝트 뷰들 공통 --- */
 .view {
     height: 100vh;
