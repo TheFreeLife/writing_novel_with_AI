@@ -120,15 +120,13 @@
     ]
   },
   "current_chapter_scope": {
-    "episode_notation": "4화",
-    "scence_goal": "보스 몬스터 '킹 스틸 울프' 처치 및 사이다 전개",
+    "episode_notation": "회차 작성 설정/회차",
+    "scence_goal": "회차 작성 설정/재미 목표",
     "must_include_events": [
-      "도망쳤던 파티 리더가 보스에게 쫓겨 다시 돌아옴.",
-      "모두가 절망하는 상황에서 진혁이 '포식자의 송곳니'를 꺼냄.",
-      "단 한 번의 공격으로 보스를 처치하고, 시스템 오류 메시지(떡밥) 출력."
+      "회차 작성 설정/전개"
     ],
     "hooks_to_drop": [
-      "system_error 떡밥을 보스 처치 순간에 노출할 것."
+      "회차 작성 설정/떡밥"
     ]
   },
   "writing_style_guide": {

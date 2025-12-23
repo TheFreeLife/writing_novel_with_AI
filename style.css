@@ -628,6 +628,16 @@ body {
     background-color: var(--primary-color);
 }
 
+/* 특수한 탭 (회차 쓰기) 스타일 */
+.tab-btn.special-tab:hover,
+.tab-btn.special-tab.active {
+    color: #ff9800;
+}
+
+.tab-btn.special-tab.active::after {
+    background-color: #ff9800;
+}
+
 /* 탭 콘텐츠 */
 .tab-content-container {
     padding: 40px;

@@ -210,6 +210,13 @@ class NovelApp {
             resetGlobalBtn: document.getElementById('global-settings-reset-btn'),
             openGlobalBtn: document.getElementById('global-directives-btn'),
 
+            writingEpisode: document.getElementById('writing-episode'),
+            writingGoal: document.getElementById('writing-goal'),
+            writingProgression: document.getElementById('writing-progression'),
+            writingForeshadowing: document.getElementById('writing-foreshadowing'),
+            saveWritingBtn: document.getElementById('save-writing-btn'),
+            resetWritingBtn: document.getElementById('reset-writing-btn'),
+
             settingsPanel: document.getElementById('settings-panel'),
             settingsOpenBtn: document.getElementById('settings-open-btn'),
             settingsCloseBtnInner: document.getElementById('settings-close-btn-inner'),
@@ -308,11 +315,23 @@ class NovelApp {
         this.dom.editDictCategoryBtn.addEventListener('click', () => this.openCategoryModal());
         this.dom.closeDictCategoryModalBtn.addEventListener('click', () => this.closeCategoryModal());
 
-        this.dom.saveDictCategoryBtn.addEventListener('click', () => this.handleCategorySave());
+                this.dom.saveDictCategoryBtn.addEventListener('click', () => this.handleCategorySave());
 
+        
 
+                        this.dom.saveWritingBtn.addEventListener('click', () => this.saveWritingSettings());
 
-        this.dom.openGlobalBtn.addEventListener('click', () => this.openGlobalSettings());
+        
+
+                        this.dom.resetWritingBtn.addEventListener('click', () => this.resetWritingSettings());
+
+        
+
+                
+
+        
+
+                        this.dom.openGlobalBtn.addEventListener('click', () => this.openGlobalSettings());
         this.dom.saveGlobalBtn.addEventListener('click', () => this.saveGlobalSettings());
         this.dom.cancelGlobalBtn.addEventListener('click', () => this.closeGlobalSettings());
         this.dom.resetGlobalBtn.addEventListener('click', () => this.resetGlobalSettings());
@@ -610,6 +629,12 @@ class NovelApp {
         const bg = p.backgroundSettings || {};
         this.dom.projBgWorld.value = bg.world || '';
 
+        const ws = p.writingSettings || {};
+        this.dom.writingEpisode.value = ws.episode || '';
+        this.dom.writingGoal.value = ws.goal || '';
+        this.dom.writingProgression.value = ws.progression || '';
+        this.dom.writingForeshadowing.value = ws.foreshadowing || '';
+
         if (bg.events && typeof bg.events === 'string') {
             p.backgroundSettings.events = [{
                 name: '기존 사건 기록',
@@ -651,6 +676,28 @@ class NovelApp {
         const p = this.projects.find(x => x.id === this.currentProjectId);
         p.novelSettings = { emotion: this.dom.projEmotion.value.trim(), gratification: this.dom.projGratification.value.trim(), focus: this.dom.projFocus.value.trim(), pov: this.dom.projPov.value.trim(), tone: this.dom.projTone.value.trim(), rules: this.dom.projRules.value.trim() };
         await this.updateProjectInDB(p); alert("저장됨");
+    }
+
+    async saveWritingSettings() {
+        const p = this.projects.find(x => x.id === this.currentProjectId);
+        if (!p) return;
+        p.writingSettings = {
+            episode: this.dom.writingEpisode.value.trim(),
+            goal: this.dom.writingGoal.value.trim(),
+            progression: this.dom.writingProgression.value.trim(),
+            foreshadowing: this.dom.writingForeshadowing.value.trim()
+        };
+        await this.updateProjectInDB(p);
+        alert("회차 작성 설정이 저장되었습니다.");
+    }
+
+    resetWritingSettings() {
+        if (confirm("모든 입력 항목을 초기화하시겠습니까? (저장된 데이터는 영향을 받지 않으며, 현재 화면의 입력값만 비워집니다.)")) {
+            this.dom.writingEpisode.value = '';
+            this.dom.writingGoal.value = '';
+            this.dom.writingProgression.value = '';
+            this.dom.writingForeshadowing.value = '';
+        }
     }
 
     async saveBackgroundKnowledge() {
