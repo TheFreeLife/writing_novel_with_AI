@@ -210,6 +210,10 @@ class NovelApp {
             resetGlobalBtn: document.getElementById('global-settings-reset-btn'),
             openGlobalBtn: document.getElementById('global-directives-btn'),
 
+            exportDataBtn: document.getElementById('export-data-btn'),
+            importDataBtn: document.getElementById('import-data-btn'),
+            importFileInput: document.getElementById('import-file-input'),
+
             writingEpisode: document.getElementById('writing-episode'),
             writingGoal: document.getElementById('writing-goal'),
             writingProgression: document.getElementById('writing-progression'),
@@ -336,6 +340,10 @@ class NovelApp {
         this.dom.cancelGlobalBtn.addEventListener('click', () => this.closeGlobalSettings());
         this.dom.resetGlobalBtn.addEventListener('click', () => this.resetGlobalSettings());
 
+        this.dom.exportDataBtn.addEventListener('click', () => this.handleExportData());
+        this.dom.importDataBtn.addEventListener('click', () => this.dom.importFileInput.click());
+        this.dom.importFileInput.addEventListener('change', (e) => this.handleImportData(e));
+
         this.dom.settingsOpenBtn.addEventListener('click', () => this.openEditorSettings());
         this.dom.bgInput.addEventListener('input', () => this.updateEditorPreview('bgColor', this.dom.bgInput.value));
         this.dom.fontInput.addEventListener('input', () => this.updateEditorPreview('fontColor', this.dom.fontInput.value));
@@ -346,27 +354,25 @@ class NovelApp {
 
     async run() {
         await StorageManager.init();
-        await this.requestPersistentStorage();
         await this.renderProjectList();
-        this.initTheme();
+        await this.initTheme();
         UIHelper.showView('menu-view');
     }
 
-    async requestPersistentStorage() {
-        if (navigator.storage?.persist && !(await navigator.storage.persisted())) await navigator.storage.persist();
+    async initTheme() {
+        // IndexedDB에서 테마 설정을 가져옵니다. 없으면 기본값 'light'
+        const theme = await StorageManager.get(StorageManager.STORE_SETTINGS, 'app_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        this.updateThemeIcons(theme);
     }
 
-    initTheme() {
-        const t = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', t);
-        this.updateThemeIcons(t);
-    }
-
-    toggleTheme() {
-        const n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', n);
-        localStorage.setItem('theme', n);
-        this.updateThemeIcons(n);
+    async toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', next);
+        await StorageManager.set(StorageManager.STORE_SETTINGS, next, 'app_theme');
+        this.updateThemeIcons(next);
     }
 
     updateThemeIcons(t) {
@@ -1310,16 +1316,44 @@ class NovelApp {
 
     togglePanelExpand(pk, ek, sk) { const p = this.dom[pk]; const isE = p.classList.toggle('expanded'); this.dom[ek].classList.toggle('hidden', isE); this.dom[sk].classList.toggle('hidden', !isE); }
 
-    openGlobalSettings() {
-        const d = { command: "WRITE_CHAPTER", instruction: "아래의 [설정값]과 [지금까지의 줄거리]를 완벽히 분석하여, [현재 챕터 범위]에 해당하는 소설 본문을 즉시 작성하시오.", output: "JSON 분석이나 사족(인사말)을 붙이지 말고...", role: "웹소설 전문 작가...", task: "소설 텍스트 생성", directives: "속도감 있는 전개..." };
-        const s = { ...d, ...JSON.parse(localStorage.getItem('global_novel_prompt_settings') || '{}') };
-        Object.keys(this.dom.globalInputs).forEach(k => this.dom.globalInputs[k].value = s[k] || '');
-        UIHelper.openModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.add('hidden');
+    async openGlobalSettings() {
+        // DB 초기화가 완료되었는지 확인
+        await StorageManager.init();
+
+        const defaultSettings = { 
+            command: "WRITE_CHAPTER", 
+            instruction: "아래의 [설정값]과 [지금까지의 줄거리]를 완벽히 분석하여, [현재 챕터 범위]에 해당하는 소설 본문을 즉시 작성하시오.", 
+            output: "JSON 분석이나 사족(인사말)을 붙이지 말고...", 
+            role: "웹소설 전문 작가...", 
+            task: "소설 텍스트 생성", 
+            directives: "속도감 있는 전개..." 
+        };
+        
+        // IndexedDB에서 설정을 가져옵니다.
+        const savedSettings = await StorageManager.get(StorageManager.STORE_PROMPTS, 'global_settings');
+        const settings = { ...defaultSettings, ...(savedSettings || {}) };
+        
+        Object.keys(this.dom.globalInputs).forEach(k => {
+            this.dom.globalInputs[k].value = settings[k] || '';
+        });
+        
+        UIHelper.openModal(this.dom.globalModal, this.dom.overlay); 
+        this.dom.themeToggle.classList.add('hidden');
     }
 
     closeGlobalSettings() { UIHelper.closeModal(this.dom.globalModal, this.dom.overlay); this.dom.themeToggle.classList.remove('hidden'); }
 
-    saveGlobalSettings() { const ns = {}; Object.keys(this.dom.globalInputs).forEach(k => ns[k] = this.dom.globalInputs[k].value.trim()); localStorage.setItem('global_novel_prompt_settings', JSON.stringify(ns)); alert("저장됨"); this.closeGlobalSettings(); }
+    async saveGlobalSettings() { 
+        const newSettings = {}; 
+        Object.keys(this.dom.globalInputs).forEach(k => {
+            newSettings[k] = this.dom.globalInputs[k].value.trim();
+        });
+        
+        // IndexedDB에 저장합니다.
+        await StorageManager.set(StorageManager.STORE_PROMPTS, newSettings, 'global_settings');
+        alert("저장됨"); 
+        this.closeGlobalSettings(); 
+    }
 
     resetGlobalSettings() {
         if (confirm("초기화하시겠습니까?")) {
@@ -1330,6 +1364,80 @@ class NovelApp {
             this.dom.globalInputs.task.value = "소설 텍스트 생성";
             this.dom.globalInputs.directives.value = "속도감 있는 전개와 주인공의 압도적인 강함을 부각할 것. 결말은 열려 있으므로 현재 사건에 집중할 것.";
             alert("기본값으로 채워졌습니다. 저장 버튼을 눌러주세요.");
+        }
+    }
+
+    async handleExportData() {
+        try {
+            const data = await StorageManager.exportAllData();
+            const fileName = `novel_editor_backup_${new Date().toISOString().split('T')[0]}.json`;
+            const content = JSON.stringify(data, null, 2);
+
+            // 1. '다른 이름으로 저장' 대화상자 시도 (현대적 브라우저 지원)
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: fileName,
+                        types: [{
+                            description: 'JSON Backup File',
+                            accept: { 'application/json': ['.json'] },
+                        }],
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(content);
+                    await writable.close();
+                    return; // 성공적으로 저장됨
+                } catch (err) {
+                    // 사용자가 취소(AbortError)한 경우 아무것도 하지 않음
+                    if (err.name === 'AbortError') return;
+                    console.warn('File System API 사용 불가, 일반 다운로드로 전환합니다.', err);
+                }
+            }
+
+            // 2. 폴백: 일반 다운로드 방식 (대화상자 미지원 브라우저)
+            const blob = new Blob([content], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('데이터 백업 실패:', error);
+            alert('데이터 백업 중 오류가 발생했습니다.');
+        }
+    }
+
+    async handleImportData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!confirm("주의: 데이터 복구를 진행하면 현재의 모든 프로젝트와 설정이 삭제되고 백업 파일의 내용으로 덮어씌워집니다. 계속하시겠습니까?")) {
+            this.dom.importFileInput.value = '';
+            return;
+        }
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    await StorageManager.importAllData(data);
+                    alert("데이터 복구가 완료되었습니다. 페이지를 새로고침합니다.");
+                    window.location.reload();
+                } catch (err) {
+                    console.error('JSON 파싱 실패:', err);
+                    alert('유효하지 않은 백업 파일입니다.');
+                }
+            };
+            reader.readAsText(file);
+        } catch (error) {
+            console.error('데이터 복구 실패:', error);
+            alert('데이터 복구 중 오류가 발생했습니다.');
+        } finally {
+            this.dom.importFileInput.value = '';
         }
     }
 

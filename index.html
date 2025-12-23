@@ -41,8 +41,13 @@
                 <!-- 프로젝트 목록이 여기에 동적으로 로드됩니다 -->
             </ul>
             <button id="create-project-btn" class="primary-btn">새 프로젝트 생성</button>
-            <button id="global-directives-btn" class="secondary-btn" style="margin-top: 12px; margin-left: 0;">전역 지시
-                프롬프트 설정</button>
+            <button id="global-directives-btn" class="secondary-btn" style="margin-top: 12px; margin-left: 0;">전역 지시 프롬프트 설정</button>
+            
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px;">
+                <button id="export-data-btn" class="secondary-btn" style="font-size: 0.9rem; padding: 10px;">데이터 백업 (JSON)</button>
+                <button id="import-data-btn" class="secondary-btn" style="font-size: 0.9rem; padding: 10px;">데이터 복구 (JSON)</button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+            </div>
         </div>
     </div>
 
